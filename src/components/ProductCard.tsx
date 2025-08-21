@@ -73,7 +73,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <img
           src={isHovered ? getTeaImage(product.name) : product.image}
           alt={product.name}
-          className="aspect-[1.06] object-cover w-full transition-all duration-500 ease-in-out"
+          className="aspect-[1.06] object-cover w-full transition-all duration-1000 ease-in-out"
         />
       </div>
       
