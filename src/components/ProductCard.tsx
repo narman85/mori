@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
@@ -29,6 +30,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const { addToCart } = useCart();
+  const navigate = useNavigate();
+
+  const handleCardClick = () => {
+    navigate(`/product/${product.id}`);
+  };
 
   const handleAddToCart = async () => {
     setIsLoading(true);
@@ -64,9 +70,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <article 
-      className={`flex flex-col h-full bg-white shadow-sm hover:shadow-lg transition-all duration-300 group ${className}`}
+      className={`flex flex-col h-full bg-white shadow-sm hover:shadow-lg transition-all duration-300 group cursor-pointer ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleCardClick}
     >
       {/* Product Image */}
       <div className="w-full flex-shrink-0 relative overflow-hidden">
@@ -121,7 +128,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       
       {/* Add to Cart Button - always at bottom */}
       <button
-        onClick={handleAddToCart}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleAddToCart();
+        }}
         disabled={isLoading}
         className="bg-[rgba(226,226,226,1)] flex w-full items-center justify-center gap-2 text-base text-black font-normal p-4 sm:p-6 border-[rgba(209,209,209,1)] border-t hover:bg-[rgba(216,216,216,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
       >
