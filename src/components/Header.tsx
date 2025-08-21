@@ -3,6 +3,7 @@ import { Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { CartSidebar } from './CartSidebar';
+import { SearchPopup } from './SearchPopup';
 
 interface HeaderProps {
   className?: string;
@@ -11,6 +12,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { getTotalItems } = useCart();
   const navigate = useNavigate();
@@ -58,7 +60,10 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           </div>
           
           {/* Search Icon - Show on tablet+ */}
-          <button className="hidden md:block aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity">
+          <button 
+            onClick={() => setIsSearchOpen(true)}
+            className="hidden md:block aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity"
+          >
             <img
               src="https://api.builder.io/api/v1/image/assets/TEMP/dbe42f7a2a6777f499b0c6e0cb6e210b255341e3?placeholderIfAbsent=true"
               alt="Search"
@@ -145,7 +150,13 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
             {/* Mobile Footer Actions */}
             <div className="border-t p-4 space-y-4">
               <div className="flex items-center justify-center gap-6">
-                <button className="flex items-center gap-2 p-3 hover:bg-gray-50 rounded-lg">
+                <button 
+                  onClick={() => {
+                    setIsSearchOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-3 hover:bg-gray-50 rounded-lg"
+                >
                   <img
                     src="https://api.builder.io/api/v1/image/assets/TEMP/dbe42f7a2a6777f499b0c6e0cb6e210b255341e3?placeholderIfAbsent=true"
                     alt="Search"
@@ -188,6 +199,12 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
       <CartSidebar 
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)} 
+      />
+
+      {/* Search Popup */}
+      <SearchPopup 
+        isOpen={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)} 
       />
     </>
   );
