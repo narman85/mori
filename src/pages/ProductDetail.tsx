@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
+import { Header } from '@/components/Header';
 import { toast } from 'sonner';
 
 // Sample product data - in a real app this would come from an API/database
@@ -60,80 +61,86 @@ const ProductDetail = () => {
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Back button */}
-      <div className="container mx-auto px-4 py-6">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/')}
-          className="mb-6 gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </Button>
+    <div className="bg-white flex flex-col overflow-hidden items-center">
+      <Header />
+      
+      <main className="w-full flex flex-col items-center">
+        {/* Back button */}
+        <div className="w-full max-w-7xl px-4 py-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="mb-6 gap-2 text-black hover:bg-[rgba(238,238,238,1)]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
 
-        {/* Product detail content */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Left side - Product image */}
-          <div className="flex justify-center lg:justify-start">
-            <div className="w-full max-w-md lg:max-w-none">
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-auto aspect-square object-cover rounded-lg shadow-lg"
-              />
-            </div>
-          </div>
-
-          {/* Right side - Product info */}
-          <div className="flex flex-col justify-center space-y-6">
-            {/* Product name */}
-            <h1 className="text-3xl lg:text-4xl font-bold text-foreground">
-              {product.name}
-            </h1>
-
-            {/* Product description */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-foreground">About this product</h2>
-              <p className="text-muted-foreground leading-relaxed text-base lg:text-lg">
-                {product.description}
-              </p>
-            </div>
-
-            {/* Weight */}
-            <div className="space-y-2">
-              <h3 className="text-base font-medium text-foreground">Weight</h3>
-              <p className="text-primary font-semibold">{product.weight}</p>
-            </div>
-
-            {/* Price */}
-            <div className="space-y-2">
-              <h3 className="text-base font-medium text-foreground">Price</h3>
-              <div className="flex items-center gap-3">
-                {hasDiscount && (
-                  <span className="text-muted-foreground line-through text-lg">
-                    {product.originalPrice} EUR
-                  </span>
-                )}
-                <span className="text-2xl lg:text-3xl font-bold text-foreground">
-                  {product.price} EUR
-                </span>
+          {/* Product detail content */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left side - Product image */}
+            <div className="flex justify-center lg:justify-start">
+              <div className="w-full max-w-md lg:max-w-none">
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-auto aspect-square object-cover shadow-sm"
+                />
               </div>
             </div>
 
-            {/* Buy button */}
-            <div className="pt-4">
-              <Button
-                onClick={handleAddToCart}
-                size="lg"
-                className="w-full lg:w-auto px-12 py-3 text-lg"
-              >
-                Add to Cart
-              </Button>
+            {/* Right side - Product info */}
+            <div className="flex flex-col justify-center space-y-6 bg-[rgba(238,238,238,1)] p-6 lg:p-8">
+              {/* Product name */}
+              <h1 className="text-2xl lg:text-3xl font-medium text-black leading-tight">
+                {product.name}
+              </h1>
+
+              {/* Product description */}
+              <div className="space-y-4">
+                <h2 className="text-lg font-medium text-black">About this product</h2>
+                <p className="text-[rgba(80,80,80,1)] leading-relaxed text-sm lg:text-base">
+                  {product.description}
+                </p>
+              </div>
+
+              {/* Weight and Price */}
+              <div className="flex flex-col gap-4">
+                {/* Weight */}
+                <div className="flex items-center justify-between">
+                  <span className="text-black font-medium">Weight:</span>
+                  <span className="text-[rgba(173,29,24,1)] font-medium">{product.weight}</span>
+                </div>
+
+                {/* Price */}
+                <div className="flex items-center justify-between">
+                  <span className="text-black font-medium">Price:</span>
+                  <div className="flex items-center gap-3">
+                    {hasDiscount && (
+                      <span className="text-black line-through text-sm lg:text-base">
+                        {product.originalPrice} EUR
+                      </span>
+                    )}
+                    <span className="text-xl lg:text-2xl font-medium text-black">
+                      {product.price} EUR
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Buy button */}
+              <div className="pt-4">
+                <button
+                  onClick={handleAddToCart}
+                  className="bg-[rgba(226,226,226,1)] w-full flex items-center justify-center gap-2 text-base text-black font-normal p-4 lg:p-6 border-[rgba(209,209,209,1)] border hover:bg-[rgba(216,216,216,1)] transition-colors"
+                >
+                  Add to Cart
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
