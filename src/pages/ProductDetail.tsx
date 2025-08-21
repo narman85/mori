@@ -5,6 +5,8 @@ import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
+import ProductImageGallery from '@/components/ProductImageGallery';
+import TeaPreparationGuide from '@/components/TeaPreparationGuide';
 
 // Sample product data - in a real app this would come from an API/database
 const sampleProducts = [
@@ -15,7 +17,18 @@ const sampleProducts = [
     price: 24.99,
     originalPrice: 29.99,
     weight: '100g',
-    image: 'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=600&h=600&fit=crop&crop=center',
+    images: [
+      'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1563822249548-64ac0be35aa9?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&h=600&fit=crop&crop=center'
+    ],
+    preparation: {
+      amount: '2g per 100ml',
+      temperature: '70-80°C',
+      steepTime: '2-3 minutes',
+      taste: 'Rich, umami, sweet'
+    }
   },
   {
     id: '2',
@@ -23,7 +36,18 @@ const sampleProducts = [
     description: 'A classic blend of Ceylon black tea infused with natural bergamot oil and cornflower petals. This aromatic tea offers a perfect balance of citrus brightness and malty depth. Sourced from certified organic tea gardens, ensuring the highest quality and ethical production standards.',
     price: 18.50,
     weight: '200g',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center',
+    images: [
+      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1597318116841-9a96b5bc8289?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=600&h=600&fit=crop&crop=center'
+    ],
+    preparation: {
+      amount: '3g per 200ml',
+      temperature: '95-100°C',
+      steepTime: '3-5 minutes',
+      taste: 'Citrusy, malty, floral'
+    }
   },
   {
     id: '3',
@@ -31,7 +55,18 @@ const sampleProducts = [
     description: 'Authentic Longjing green tea from the hills of Hangzhou, China. Known for its flat, sword-shaped leaves and delicate, sweet flavor with a hint of nuttiness. This pan-fired tea offers a smooth, refreshing taste and beautiful jade-colored liquor.',
     price: 22.00,
     weight: '150g',
-    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center',
+    images: [
+      'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1564890769747-2f7bb2129cfa?w=600&h=600&fit=crop&crop=center',
+      'https://images.unsplash.com/photo-1571194373149-4593ce33e0b0?w=600&h=600&fit=crop&crop=center'
+    ],
+    preparation: {
+      amount: '2-3g per 150ml',
+      temperature: '75-85°C',
+      steepTime: '2-3 minutes',
+      taste: 'Delicate, sweet, nutty'
+    }
   },
 ];
 
@@ -78,19 +113,18 @@ const ProductDetail = () => {
 
           {/* Product detail content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Left side - Product image */}
+            {/* Left side - Product image gallery */}
             <div className="flex justify-center lg:justify-start">
               <div className="w-full max-w-md lg:max-w-none">
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-auto aspect-square object-cover shadow-sm"
+                <ProductImageGallery 
+                  images={product.images} 
+                  productName={product.name}
                 />
               </div>
             </div>
 
             {/* Right side - Product info */}
-            <div className="flex flex-col justify-center space-y-6 bg-[rgba(238,238,238,1)] p-6 lg:p-8">
+            <div className="flex flex-col justify-center space-y-6 p-6 lg:p-8">
               {/* Product name */}
               <h1 className="text-2xl lg:text-3xl font-medium text-black leading-tight">
                 {product.name}
@@ -139,6 +173,12 @@ const ProductDetail = () => {
               </div>
             </div>
           </div>
+
+          {/* Tea Preparation Guide */}
+          <TeaPreparationGuide 
+            preparation={product.preparation} 
+            productName={product.name}
+          />
         </div>
       </main>
     </div>

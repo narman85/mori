@@ -17,7 +17,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       description: 'A deeply roasted green tea with a smoky, earthy aroma and robust flavor.',
       price: 18,
       weight: '100gr',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true'
+      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
       id: '2',
@@ -25,7 +25,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       description: 'A deeply roasted green tea with a smoky, earthy aroma and robust flavor.',
       price: 18,
       weight: '100gr',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/f3bba78c5228f67b6184e5f8344191447ce20481?placeholderIfAbsent=true'
+      images: ['https://api.builder.io/api/v1/image/assets/TEMP/f3bba78c5228f67b6184e5f8344191447ce20481?placeholderIfAbsent=true']
     },
     {
       id: '3',
@@ -34,7 +34,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       price: 13,
       originalPrice: 18,
       weight: '30gr',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true'
+      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
       id: '4',
@@ -43,7 +43,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       price: 13,
       originalPrice: 18,
       weight: '30gr',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true'
+      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
       id: '5',
@@ -52,7 +52,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       price: 13,
       originalPrice: 18,
       weight: '30gr',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true'
+      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
       id: '6',
@@ -61,7 +61,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       price: 13,
       originalPrice: 18,
       weight: '30gr',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true'
+      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
       id: '7',
@@ -70,7 +70,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       price: 13,
       originalPrice: 18,
       weight: '30gr',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true'
+      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
       id: '8',
@@ -79,7 +79,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       price: 13,
       originalPrice: 18,
       weight: '30gr',
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true'
+      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     }
   ];
 

@@ -61,7 +61,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                     {/* Product Image */}
                     <div className="w-16 h-16 flex-shrink-0">
                       <img
-                        src={item.image}
+                        src={item.images[0]}
                         alt={item.name}
                         className="w-full h-full object-cover rounded"
                       />
