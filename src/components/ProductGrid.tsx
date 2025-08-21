@@ -1,11 +1,14 @@
 import React from 'react';
 import { ProductCard, Product } from './ProductCard';
+import { useState } from 'react';
+import { CartSidebar } from './CartSidebar';
 
 interface ProductGridProps {
   className?: string;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const products: Product[] = [
     {
@@ -94,6 +97,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
               key={product.id}
               product={product}
               onAddToCart={() => {}} // Bu artıq istifadə olunmur
+              onCartOpen={() => setIsCartOpen(true)}
               className="w-full"
             />
           ))}
@@ -107,6 +111,12 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
           className="aspect-[3.53] object-contain w-[965px] max-w-full max-md:w-full"
         />
       </div>
+
+      {/* Cart Sidebar */}
+      <CartSidebar 
+        isOpen={isCartOpen} 
+        onClose={() => setIsCartOpen(false)} 
+      />
     </section>
   );
 };

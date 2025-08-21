@@ -16,12 +16,14 @@ export interface Product {
 interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
+  onCartOpen?: () => void;
   className?: string;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ 
   product, 
   onAddToCart, 
+  onCartOpen,
   className = '' 
 }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -34,8 +36,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       await new Promise(resolve => setTimeout(resolve, 500));
       addToCart(product);
       toast.success(`${product.name} əlavə edildi`, {
-        description: "Məhsul səbətə əlavə edildi",
-        duration: 2000 // 2 saniyə
+        description: "Səbəti açmaq üçün düyməyə basın",
+        duration: 3000,
+        action: {
+          label: "Səbəti aç",
+          onClick: () => onCartOpen?.()
+        }
       });
     } finally {
       setIsLoading(false);
