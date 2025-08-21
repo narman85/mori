@@ -88,7 +88,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       </h2>
       
       <div className="flex justify-center w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 w-full max-w-[1428px] mt-[35px] max-md:mt-8">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 w-full max-w-[1428px] mt-[35px] max-md:mt-8">
           {products.map((product) => (
             <ProductCard
               key={product.id}
