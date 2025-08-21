@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ProductCard, Product } from './ProductCard';
 
 interface ProductGridProps {
@@ -6,7 +6,6 @@ interface ProductGridProps {
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
-  const [cart, setCart] = useState<Product[]>([]);
 
   const products: Product[] = [
     {
@@ -81,22 +80,6 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
     }
   ];
 
-  const handleAddToCart = async (product: Product) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: (item.quantity || 1) + 1 }
-            : item
-        );
-      }
-      return [...prevCart, { ...product, quantity: 1 }];
-    });
-  };
 
   return (
     <section className={`px-8 max-md:px-4 ${className}`}>
@@ -110,7 +93,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
             <ProductCard
               key={product.id}
               product={product}
-              onAddToCart={handleAddToCart}
+              onAddToCart={() => {}} // Bu artıq istifadə olunmur
               className="w-full"
             />
           ))}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useCart } from '@/context/CartContext';
 
 interface HeaderProps {
   className?: string;
@@ -6,6 +7,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
+  const { getTotalItems } = useCart();
 
   const navigationItems = [
     { label: 'Store', href: '#store' },
@@ -62,12 +64,17 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           />
         </button>
         
-        <button className="aspect-[1] object-contain w-6 self-stretch shrink-0 my-auto hover:opacity-70 transition-opacity">
+        <button className="relative aspect-[1] object-contain w-6 self-stretch shrink-0 my-auto hover:opacity-70 transition-opacity">
           <img
             src="https://api.builder.io/api/v1/image/assets/TEMP/98f20a3e4542a7e60e90d13193239cb2efd2290d?placeholderIfAbsent=true"
             alt="Shopping cart"
             className="w-full h-full"
           />
+          {getTotalItems() > 0 && (
+            <span className="absolute -top-2 -right-2 bg-[rgba(173,29,24,1)] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+              {getTotalItems()}
+            </span>
+          )}
         </button>
       </div>
     </header>

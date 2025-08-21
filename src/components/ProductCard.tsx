@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useCart } from '@/context/CartContext';
+import { toast } from 'sonner';
 
 export interface Product {
   id: string;
@@ -23,11 +25,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   className = '' 
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const { addToCart } = useCart();
 
   const handleAddToCart = async () => {
     setIsLoading(true);
     try {
-      await onAddToCart(product);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      addToCart(product);
+      toast.success(`${product.name} əlavə edildi`, {
+        description: "Məhsul səbətə əlavə edildi"
+      });
     } finally {
       setIsLoading(false);
     }
