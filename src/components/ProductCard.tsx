@@ -34,7 +34,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       await new Promise(resolve => setTimeout(resolve, 500));
       addToCart(product);
       toast.success(`${product.name} əlavə edildi`, {
-        description: "Məhsul səbətə əlavə edildi"
+        description: "Məhsul səbətə əlavə edildi",
+        duration: 2000 // 2 saniyə
       });
     } finally {
       setIsLoading(false);
