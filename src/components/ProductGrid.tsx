@@ -117,11 +117,13 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
         </div>
       </div>
       
-      <img
-        src="https://api.builder.io/api/v1/image/assets/TEMP/f9a083c8737fcdd71aaa82d2560e2547c2c34744?placeholderIfAbsent=true"
-        alt="Tea ceremony decoration"
-        className="aspect-[3.53] object-contain w-[965px] max-w-full mt-[205px] max-md:mt-10"
-      />
+      <div className="w-screen relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] flex justify-start mt-[205px] max-md:mt-10">
+        <img
+          src="https://api.builder.io/api/v1/image/assets/TEMP/f9a083c8737fcdd71aaa82d2560e2547c2c34744?placeholderIfAbsent=true"
+          alt="Tea ceremony decoration"
+          className="aspect-[3.53] object-contain w-[965px] max-w-full"
+        />
+      </div>
     </section>
   );
 };
