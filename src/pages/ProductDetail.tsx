@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
+import { CartSidebar } from '@/components/CartSidebar';
 import { toast } from 'sonner';
 import ProductImageGallery from '@/components/ProductImageGallery';
 import TeaPreparationGuide from '@/components/TeaPreparationGuide';
@@ -90,6 +91,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const product = sampleProducts.find(p => p.id === id);
 
@@ -106,7 +108,14 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     addToCart(product);
-    toast.success(`${product.name} added to cart`);
+    toast.success(`${product.name} added`, {
+      description: "Click to open cart",
+      duration: 3000,
+      action: {
+        label: "Open cart",
+        onClick: () => setIsCartOpen(true)
+      }
+    });
   };
 
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
@@ -199,6 +208,12 @@ const ProductDetail = () => {
           )}
         </div>
       </main>
+
+      {/* Cart Sidebar */}
+      <CartSidebar 
+        isOpen={isCartOpen} 
+        onClose={() => setIsCartOpen(false)} 
+      />
     </div>
   );
 };
