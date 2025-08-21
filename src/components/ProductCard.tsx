@@ -27,6 +27,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   className = '' 
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const { addToCart } = useCart();
 
   const handleAddToCart = async () => {
@@ -49,16 +50,45 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  
+  // Çay şəkillər - məhsul tipinə görə
+  const getTeaImage = (productName: string) => {
+    if (productName.toLowerCase().includes('matcha')) {
+      return 'https://api.builder.io/api/v1/image/assets/TEMP/matcha-tea-prepared?placeholderIfAbsent=true';
+    }
+    if (productName.toLowerCase().includes('hōji') || productName.toLowerCase().includes('hojicha')) {
+      return 'https://api.builder.io/api/v1/image/assets/TEMP/hojicha-tea-prepared?placeholderIfAbsent=true';
+    }
+    return 'https://api.builder.io/api/v1/image/assets/TEMP/green-tea-prepared?placeholderIfAbsent=true';
+  };
 
   return (
-    <article className={`flex flex-col h-full bg-white shadow-sm ${className}`}>
+    <article 
+      className={`flex flex-col h-full bg-white shadow-sm hover:shadow-lg transition-all duration-300 group ${className}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Product Image */}
-      <div className="w-full flex-shrink-0">
+      <div className="w-full flex-shrink-0 relative overflow-hidden">
         <img
           src={product.image}
           alt={product.name}
-          className="aspect-[1.06] object-cover w-full"
+          className={`aspect-[1.06] object-cover w-full transition-transform duration-300 ${isHovered ? 'scale-105' : 'scale-100'}`}
         />
+        
+        {/* Tea Hover Overlay */}
+        <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity duration-300 ${
+          isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}>
+          <div className="bg-white rounded-lg p-4 transform transition-all duration-300 scale-90 group-hover:scale-100">
+            <img
+              src={getTeaImage(product.name)}
+              alt={`${product.name} hazır çay`}
+              className="w-24 h-24 object-cover rounded-lg"
+            />
+            <p className="text-xs text-center mt-2 font-medium text-gray-700">Hazır çay görünüşü</p>
+          </div>
+        </div>
       </div>
       
       {/* Product Info - takes remaining space */}
