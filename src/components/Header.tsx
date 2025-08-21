@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useCart } from '@/context/CartContext';
+import { CartSidebar } from './CartSidebar';
 
 interface HeaderProps {
   className?: string;
@@ -7,6 +8,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const { getTotalItems } = useCart();
 
   const navigationItems = [
@@ -64,7 +66,10 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           />
         </button>
         
-        <button className="relative aspect-[1] object-contain w-6 self-stretch shrink-0 my-auto hover:opacity-70 transition-opacity">
+        <button 
+          onClick={() => setIsCartOpen(true)}
+          className="relative aspect-[1] object-contain w-6 self-stretch shrink-0 my-auto hover:opacity-70 transition-opacity"
+        >
           <img
             src="https://api.builder.io/api/v1/image/assets/TEMP/98f20a3e4542a7e60e90d13193239cb2efd2290d?placeholderIfAbsent=true"
             alt="Shopping cart"
@@ -77,6 +82,12 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           )}
         </button>
       </div>
+
+      {/* Cart Sidebar */}
+      <CartSidebar 
+        isOpen={isCartOpen} 
+        onClose={() => setIsCartOpen(false)} 
+      />
     </header>
   );
 };
