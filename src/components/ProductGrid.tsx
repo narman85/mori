@@ -104,15 +104,17 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
         Selection
       </h2>
       
-      <div className="flex w-full max-w-[1428px] gap-[48px_20px] flex-wrap mt-[35px] max-md:max-w-full max-md:mt-8">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            product={product}
-            onAddToCart={handleAddToCart}
-            className="min-h-[645px]"
-          />
-        ))}
+      <div className="flex justify-center w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full max-w-[1428px] mt-[35px] max-md:mt-8">
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onAddToCart={handleAddToCart}
+              className="w-full"
+            />
+          ))}
+        </div>
       </div>
       
       <img
