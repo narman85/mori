@@ -108,7 +108,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
         <img
           src="https://api.builder.io/api/v1/image/assets/TEMP/f9a083c8737fcdd71aaa82d2560e2547c2c34744?placeholderIfAbsent=true"
           alt="Tea ceremony decoration"
-          className="aspect-[3.53] object-contain w-[965px] max-w-full max-md:w-full"
+          className="aspect-[3.53] object-contain w-[965px] max-w-full max-md:w-full md:w-[420px] lg:w-[965px] md:self-start"
         />
       </div>
 
