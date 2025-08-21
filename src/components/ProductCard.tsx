@@ -10,7 +10,7 @@ export interface Product {
   price: number;
   originalPrice?: number;
   weight: string;
-  images: string[];
+  images?: string[];
   quantity?: number;
 }
 
@@ -79,7 +79,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       <div className="w-full flex-shrink-0 relative overflow-hidden">
         {/* Original image */}
         <img
-          src={product.images[0]}
+          src={product.images?.[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop&crop=center'}
           alt={product.name}
           className={`aspect-[1.06] object-cover w-full transition-opacity duration-[1500ms] ease-in-out ${
             isHovered ? 'opacity-0' : 'opacity-100'

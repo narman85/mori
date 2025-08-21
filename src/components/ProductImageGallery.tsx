@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ProductImageGalleryProps {
-  images: string[];
+  images?: string[];
   productName: string;
 }
 
@@ -14,12 +14,15 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
   const [translateX, setTranslateX] = useState(0);
   const imageRef = useRef<HTMLDivElement>(null);
 
+  // Fallback to default image if images is empty or undefined
+  const safeImages = images && images.length > 0 ? images : ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center'];
+
   const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    setCurrentImageIndex((prev) => (prev + 1) % safeImages.length);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    setCurrentImageIndex((prev) => (prev - 1 + safeImages.length) % safeImages.length);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -96,7 +99,7 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
           onTouchEnd={handleTouchEnd}
         >
           <img
-            src={images[currentImageIndex]}
+            src={safeImages[currentImageIndex]}
             alt={`${productName} - Image ${currentImageIndex + 1}`}
             className="w-full h-auto aspect-square object-cover shadow-sm transition-transform duration-200"
             style={{
@@ -107,7 +110,7 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
         </div>
 
         {/* Navigation Buttons */}
-        {images.length > 1 && (
+        {safeImages.length > 1 && (
           <>
             <Button
               variant="ghost"
@@ -130,9 +133,9 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
       </div>
 
       {/* Thumbnail Gallery */}
-      {images.length > 1 && (
+      {safeImages.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {images.map((image, index) => (
+          {safeImages.map((image, index) => (
             <button
               key={index}
               onClick={() => setCurrentImageIndex(index)}

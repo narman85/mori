@@ -8,8 +8,24 @@ import { toast } from 'sonner';
 import ProductImageGallery from '@/components/ProductImageGallery';
 import TeaPreparationGuide from '@/components/TeaPreparationGuide';
 
+interface DetailProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  weight: string;
+  images?: string[];
+  preparation?: {
+    amount: string;
+    temperature: string;
+    steepTime: string;
+    taste: string;
+  };
+}
+
 // Sample product data - in a real app this would come from an API/database
-const sampleProducts = [
+const sampleProducts: DetailProduct[] = [
   {
     id: '1',
     name: 'Japanese Matcha Powder',
@@ -117,7 +133,7 @@ const ProductDetail = () => {
             <div className="flex justify-center lg:justify-start">
               <div className="w-full max-w-md lg:max-w-none">
                 <ProductImageGallery 
-                  images={product.images} 
+                  images={product.images || []} 
                   productName={product.name}
                 />
               </div>
@@ -175,10 +191,12 @@ const ProductDetail = () => {
           </div>
 
           {/* Tea Preparation Guide */}
-          <TeaPreparationGuide 
-            preparation={product.preparation} 
-            productName={product.name}
-          />
+          {product.preparation && (
+            <TeaPreparationGuide 
+              preparation={product.preparation} 
+              productName={product.name}
+            />
+          )}
         </div>
       </main>
     </div>
