@@ -70,10 +70,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     >
       {/* Product Image */}
       <div className="w-full flex-shrink-0 relative overflow-hidden">
+        {/* Orijinal şəkil */}
         <img
-          src={isHovered ? getTeaImage(product.name) : product.image}
+          src={product.image}
           alt={product.name}
-          className="aspect-[1.06] object-cover w-full transition-all duration-1000 ease-in-out"
+          className={`aspect-[1.06] object-cover w-full transition-opacity duration-[1500ms] ease-in-out ${
+            isHovered ? 'opacity-0' : 'opacity-100'
+          }`}
+        />
+        
+        {/* Hover şəkil - overlay */}
+        <img
+          src={getTeaImage(product.name)}
+          alt={`${product.name} hazır çay`}
+          className={`absolute inset-0 aspect-[1.06] object-cover w-full transition-opacity duration-[1500ms] ease-in-out ${
+            isHovered ? 'opacity-100' : 'opacity-0'
+          }`}
         />
       </div>
       
