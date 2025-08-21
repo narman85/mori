@@ -105,13 +105,13 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       </h2>
       
       <div className="flex justify-center w-full">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full max-w-[1428px] mt-[35px] max-md:mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 w-full max-w-[1428px] mt-[35px] max-md:mt-8 auto-rows-fr">
           {products.map((product) => (
             <ProductCard
               key={product.id}
               product={product}
               onAddToCart={handleAddToCart}
-              className="w-full"
+              className="w-full max-w-[350px] mx-auto"
             />
           ))}
         </div>
