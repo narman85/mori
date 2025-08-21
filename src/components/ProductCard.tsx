@@ -36,48 +36,53 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
 
   return (
-    <article className={`flex flex-col bg-white ${className}`}>
-      <div className="w-full">
-        <div className="w-full overflow-hidden">
-          <img
-            src={product.image}
-            alt={product.name}
-            className="aspect-[1.06] object-contain w-full"
-          />
-        </div>
-        
-        <div className="bg-[rgba(238,238,238,1)] flex w-full gap-4 text-base font-normal justify-between p-6">
+    <article className={`flex flex-col h-full bg-white shadow-sm ${className}`}>
+      {/* Product Image */}
+      <div className="w-full flex-shrink-0">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="aspect-[1.06] object-cover w-full"
+        />
+      </div>
+      
+      {/* Product Info - takes remaining space */}
+      <div className="bg-[rgba(238,238,238,1)] flex flex-col justify-between p-4 sm:p-6 flex-grow">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          {/* Product Details */}
           <div className="flex-1 min-w-0">
-            <h3 className="text-black">
+            <h3 className="text-black font-medium text-base leading-tight">
               {product.name}
             </h3>
-            <p className="text-[rgba(80,80,80,1)] mt-1.5">
+            <p className="text-[rgba(80,80,80,1)] mt-2 text-sm sm:text-base leading-relaxed">
               {product.description}
             </p>
           </div>
           
-          <div className="flex flex-col text-right justify-center flex-shrink-0">
+          {/* Price Info */}
+          <div className="flex flex-row sm:flex-col justify-between sm:justify-center items-center sm:items-end text-right flex-shrink-0 gap-2 sm:gap-1">
             {hasDiscount && (
-              <div className="text-black leading-none line-through whitespace-nowrap">
+              <div className="text-black leading-none line-through whitespace-nowrap text-sm sm:text-base">
                 {product.originalPrice} EUR
               </div>
             )}
-            <div className={`text-black leading-none whitespace-nowrap ${hasDiscount ? 'mt-1.5' : ''}`}>
+            <div className={`text-black leading-none whitespace-nowrap font-medium text-base sm:text-lg ${hasDiscount ? 'sm:mt-1' : ''}`}>
               {product.price} EUR
             </div>
-            <div className="text-[rgba(173,29,24,1)] mt-1.5">
+            <div className="text-[rgba(173,29,24,1)] text-sm whitespace-nowrap">
               {product.weight}
             </div>
           </div>
         </div>
       </div>
       
+      {/* Add to Cart Button - always at bottom */}
       <button
         onClick={handleAddToCart}
         disabled={isLoading}
-        className="bg-[rgba(226,226,226,1)] flex w-full items-center gap-2.5 text-base text-black font-normal justify-center p-6 border-[rgba(209,209,209,1)] border-t hover:bg-[rgba(216,216,216,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
+        className="bg-[rgba(226,226,226,1)] flex w-full items-center justify-center gap-2 text-base text-black font-normal p-4 sm:p-6 border-[rgba(209,209,209,1)] border-t hover:bg-[rgba(216,216,216,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
       >
-        <span className="self-stretch my-auto">
+        <span>
           {isLoading ? 'Adding...' : 'Add to cart'}
         </span>
       </button>
