@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
@@ -90,7 +90,7 @@ const sampleProducts: DetailProduct[] = [
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart, removeFromCart, getItemQuantity } = useCart();
+  const { addToCart } = useCart();
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   const product = sampleProducts.find(p => p.id === id);
@@ -116,16 +116,6 @@ const ProductDetail = () => {
         onClick: () => setIsCartOpen(true)
       }
     });
-  };
-
-  const handleIncrement = () => {
-    addToCart(product);
-    toast.success(`${product.name} quantity increased`);
-  };
-
-  const handleDecrement = () => {
-    removeFromCart(product.id);
-    toast.success(`${product.name} quantity decreased`);
   };
 
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
@@ -199,32 +189,12 @@ const ProductDetail = () => {
 
               {/* Buy button */}
               <div className="pt-4">
-                {getItemQuantity(product.id) > 0 ? (
-                  <div className="w-full bg-[rgba(226,226,226,1)] border-[rgba(209,209,209,1)] border flex items-center justify-between p-4 lg:p-6">
-                    <button
-                      onClick={handleDecrement}
-                      className="flex items-center justify-center w-8 h-8 hover:bg-[rgba(216,216,216,1)] rounded transition-colors"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="text-base font-normal text-black">
-                      In cart ({getItemQuantity(product.id)})
-                    </span>
-                    <button
-                      onClick={handleIncrement}
-                      className="flex items-center justify-center w-8 h-8 hover:bg-[rgba(216,216,216,1)] rounded transition-colors"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleAddToCart}
-                    className="bg-[rgba(226,226,226,1)] w-full flex items-center justify-center gap-2 text-base text-black font-normal p-4 lg:p-6 border-[rgba(209,209,209,1)] border hover:bg-[rgba(216,216,216,1)] transition-colors"
-                  >
-                    Add to Cart
-                  </button>
-                )}
+                <button
+                  onClick={handleAddToCart}
+                  className="bg-[rgba(226,226,226,1)] w-full flex items-center justify-center gap-2 text-base text-black font-normal p-4 lg:p-6 border-[rgba(209,209,209,1)] border hover:bg-[rgba(216,216,216,1)] transition-colors"
+                >
+                  Add to Cart
+                </button>
               </div>
             </div>
           </div>

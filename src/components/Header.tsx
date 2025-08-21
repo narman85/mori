@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { CartSidebar } from './CartSidebar';
@@ -14,29 +14,8 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const { getTotalItems } = useCart();
   const navigate = useNavigate();
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const languageOptions = [
-    { code: 'EN', label: 'English' },
-    { code: 'EST', label: 'Estonian' },
-    { code: 'RU', label: 'Russian' }
-  ];
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsLanguageDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const navigationItems: { label: string; href: string }[] = [];
 
@@ -44,13 +23,11 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
     <>
       <header className={`self-stretch flex w-full items-center justify-between text-sm font-normal leading-none px-4 md:px-8 lg:px-[150px] py-3 border-[rgba(239,239,239,1)] border-b ${className}`}>
         {/* Logo */}
-        <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
-          <img
-            src="https://api.builder.io/api/v1/image/assets/TEMP/7d22d1b387c53084b9023edc3e88327476f862b4?placeholderIfAbsent=true"
-            alt="Tea Company Logo"
-            className="aspect-[4.37] object-contain w-20 md:w-[90px] lg:w-[105px] flex-shrink-0"
-          />
-        </button>
+        <img
+          src="https://api.builder.io/api/v1/image/assets/TEMP/7d22d1b387c53084b9023edc3e88327476f862b4?placeholderIfAbsent=true"
+          alt="Tea Company Logo"
+          className="aspect-[4.37] object-contain w-20 md:w-[90px] lg:w-[105px] flex-shrink-0"
+        />
         
         {/* Desktop Navigation */}
         <nav className="hidden xl:flex items-center gap-6 text-black text-center">
@@ -76,31 +53,13 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           </a>
           
           {/* Language Dropdown - Show on tablet+ */}
-          <div ref={dropdownRef} className="hidden md:relative md:flex items-center">
-            <button 
-              onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-              className="flex items-center gap-[3px] pl-2 md:pl-3 pr-1 md:pr-1.5 py-1.5 hover:bg-gray-50 transition-colors rounded"
-            >
-              <span className="text-xs md:text-sm">{selectedLanguage}</span>
-              <ChevronDown className="w-2.5 md:w-3 h-2.5 md:h-3" />
-            </button>
-            
-            {isLanguageDropdownOpen && (
-              <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[120px]">
-                {languageOptions.map((option) => (
-                  <button
-                    key={option.code}
-                    onClick={() => {
-                      setSelectedLanguage(option.code);
-                      setIsLanguageDropdownOpen(false);
-                    }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors"
-                  >
-                    {option.code} - {option.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="hidden md:flex items-center gap-[3px] pl-2 md:pl-3 pr-1 md:pr-1.5 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors">
+            <span className="text-xs md:text-sm">{selectedLanguage}</span>
+            <img
+              src="https://api.builder.io/api/v1/image/assets/TEMP/cbbb23b1d46a928bedc44136fefc0297f6355812?placeholderIfAbsent=true"
+              alt="Language dropdown"
+              className="aspect-[1] object-contain w-2.5 md:w-3"
+            />
           </div>
           
           {/* Search Icon - Show on tablet+ */}
@@ -164,13 +123,11 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           <div className="flex flex-col h-full">
             {/* Mobile Header */}
             <div className="flex items-center justify-between p-4 border-b">
-              <button onClick={() => navigate('/')} className="hover:opacity-80 transition-opacity">
-                <img
-                  src="https://api.builder.io/api/v1/image/assets/TEMP/7d22d1b387c53084b9023edc3e88327476f862b4?placeholderIfAbsent=true"
-                  alt="Tea Company Logo"
-                  className="aspect-[4.37] object-contain w-20"
-                />
-              </button>
+              <img
+                src="https://api.builder.io/api/v1/image/assets/TEMP/7d22d1b387c53084b9023edc3e88327476f862b4?placeholderIfAbsent=true"
+                alt="Tea Company Logo"
+                className="aspect-[4.37] object-contain w-20"
+              />
               <button 
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -181,39 +138,6 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
             {/* Mobile Navigation */}
             <nav className="flex-1 flex flex-col p-4 space-y-2">
-              {/* Search */}
-              <button 
-                onClick={() => {
-                  setIsSearchOpen(true);
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors text-left"
-              >
-                <img
-                  src="https://api.builder.io/api/v1/image/assets/TEMP/dbe42f7a2a6777f499b0c6e0cb6e210b255341e3?placeholderIfAbsent=true"
-                  alt="Search"
-                  className="w-5 h-5"
-                />
-                <span>Search</span>
-              </button>
-
-              {/* Account */}
-              <button 
-                onClick={() => {
-                  navigate('/auth');
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors text-left"
-              >
-                <img
-                  src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
-                  alt="User account"
-                  className="w-5 h-5"
-                />
-                <span>Account</span>
-              </button>
-
-              {/* About */}
               <a
                 href="#about"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -221,35 +145,52 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               >
                 About
               </a>
-
-              {/* Language Selection */}
-              <div className="relative">
-                <button 
-                  onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}
-                  className="flex items-center justify-between w-full p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors text-left"
-                >
-                  <span>Language ({selectedLanguage})</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                
-                {isLanguageDropdownOpen && (
-                  <div className="mt-2 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                    {languageOptions.map((option) => (
-                      <button
-                        key={option.code}
-                        onClick={() => {
-                          setSelectedLanguage(option.code);
-                          setIsLanguageDropdownOpen(false);
-                        }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors"
-                      >
-                        {option.code} - {option.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </nav>
+
+            {/* Mobile Footer Actions */}
+            <div className="border-t p-4 space-y-4">
+              <div className="flex items-center justify-center gap-6">
+                <button 
+                  onClick={() => {
+                    setIsSearchOpen(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-3 hover:bg-gray-50 rounded-lg"
+                >
+                  <img
+                    src="https://api.builder.io/api/v1/image/assets/TEMP/dbe42f7a2a6777f499b0c6e0cb6e210b255341e3?placeholderIfAbsent=true"
+                    alt="Search"
+                    className="w-5 h-5"
+                  />
+                  <span>Search</span>
+                </button>
+                <button 
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-3 hover:bg-gray-50 rounded-lg"
+                >
+                  <img
+                    src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
+                    alt="User account"
+                    className="w-5 h-5"
+                  />
+                  <span>Account</span>
+                </button>
+              </div>
+              
+              <div className="flex items-center justify-center">
+                <div className="flex items-center gap-2 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                  <span>{selectedLanguage}</span>
+                  <img
+                    src="https://api.builder.io/api/v1/image/assets/TEMP/cbbb23b1d46a928bedc44136fefc0297f6355812?placeholderIfAbsent=true"
+                    alt="Language dropdown"
+                    className="w-3 h-3"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
