@@ -54,12 +54,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   // Çay şəkillər - məhsul tipinə görə
   const getTeaImage = (productName: string) => {
     if (productName.toLowerCase().includes('matcha')) {
-      return 'https://api.builder.io/api/v1/image/assets/TEMP/matcha-tea-prepared?placeholderIfAbsent=true';
+      return 'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=200&h=200&fit=crop&crop=center';
     }
     if (productName.toLowerCase().includes('hōji') || productName.toLowerCase().includes('hojicha')) {
-      return 'https://api.builder.io/api/v1/image/assets/TEMP/hojicha-tea-prepared?placeholderIfAbsent=true';
+      return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=200&h=200&fit=crop&crop=center';
     }
-    return 'https://api.builder.io/api/v1/image/assets/TEMP/green-tea-prepared?placeholderIfAbsent=true';
+    return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop&crop=center';
   };
 
   return (
