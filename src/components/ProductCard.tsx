@@ -8,6 +8,7 @@ export interface Product {
   originalPrice?: number;
   weight: string;
   image: string;
+  quantity?: number;
 }
 
 interface ProductCardProps {
