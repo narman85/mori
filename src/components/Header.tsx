@@ -30,8 +30,8 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           className="aspect-[4.37] object-contain w-20 md:w-[90px] lg:w-[105px] flex-shrink-0"
         />
         
-        {/* Desktop & Tablet Navigation */}
-        <nav className="hidden lg:flex items-center gap-6 text-black text-center">
+        {/* Desktop Navigation */}
+        <nav className="hidden xl:flex items-center gap-6 text-black text-center">
           {navigationItems.map((item, index) => (
             <a
               key={index}
@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           {/* Mobile & Tablet Menu Button */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="xl:hidden p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             {isMobileMenuOpen ? (
               <X className="w-5 h-5" />
@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
       {/* Mobile & Tablet Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-white">
+        <div className="xl:hidden fixed inset-0 z-50 bg-white">
           <div className="flex flex-col h-full">
             {/* Mobile Header */}
             <div className="flex items-center justify-between p-4 border-b">
