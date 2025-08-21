@@ -59,11 +59,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             
             <div className="flex flex-col text-right justify-center">
               {hasDiscount && (
-                <div className="text-black leading-none line-through">
+                <div className="text-black leading-none line-through whitespace-nowrap">
                   {product.originalPrice} EUR
                 </div>
               )}
-              <div className={`text-black leading-none ${hasDiscount ? 'mt-1.5' : ''}`}>
+              <div className={`text-black leading-none whitespace-nowrap ${hasDiscount ? 'mt-1.5' : ''}`}>
                 {product.price} EUR
               </div>
               <div className="text-[rgba(173,29,24,1)] mt-1.5">
