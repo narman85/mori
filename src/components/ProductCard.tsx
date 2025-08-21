@@ -71,24 +71,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       {/* Product Image */}
       <div className="w-full flex-shrink-0 relative overflow-hidden">
         <img
-          src={product.image}
+          src={isHovered ? getTeaImage(product.name) : product.image}
           alt={product.name}
-          className={`aspect-[1.06] object-cover w-full transition-transform duration-300 ${isHovered ? 'scale-105' : 'scale-100'}`}
+          className="aspect-[1.06] object-cover w-full transition-all duration-500 ease-in-out"
         />
-        
-        {/* Tea Hover Overlay */}
-        <div className={`absolute inset-0 bg-black/60 flex items-center justify-center transition-opacity duration-300 ${
-          isHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}>
-          <div className="bg-white rounded-lg p-4 transform transition-all duration-300 scale-90 group-hover:scale-100">
-            <img
-              src={getTeaImage(product.name)}
-              alt={`${product.name} hazır çay`}
-              className="w-24 h-24 object-cover rounded-lg"
-            />
-            <p className="text-xs text-center mt-2 font-medium text-gray-700">Hazır çay görünüşü</p>
-          </div>
-        </div>
       </div>
       
       {/* Product Info - takes remaining space */}
