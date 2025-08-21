@@ -29,8 +29,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const { addToCart } = useCart();
+  const { addToCart, updateQuantity, cart } = useCart();
   const navigate = useNavigate();
+
+  // Get current quantity in cart
+  const cartItem = cart.find(item => item.id === product.id);
+  const quantity = cartItem?.quantity || 0;
 
   const handleCardClick = () => {
     navigate(`/product/${product.id}`);
@@ -127,18 +131,44 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
       
       {/* Add to Cart Button - always at bottom */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleAddToCart();
-        }}
-        disabled={isLoading}
-        className="bg-[rgba(226,226,226,1)] flex w-full items-center justify-center gap-2 text-base text-black font-normal p-4 sm:p-6 border-[rgba(209,209,209,1)] border-t hover:bg-[rgba(216,216,216,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-      >
-        <span>
-          {isLoading ? 'Adding...' : 'Add to cart'}
-        </span>
-      </button>
+      {quantity === 0 ? (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleAddToCart();
+          }}
+          disabled={isLoading}
+          className="bg-[rgba(226,226,226,1)] flex w-full items-center justify-center gap-2 text-base text-black font-normal p-4 sm:p-6 border-[rgba(209,209,209,1)] border-t hover:bg-[rgba(216,216,216,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+        >
+          <span>
+            {isLoading ? 'Adding...' : 'Add to cart'}
+          </span>
+        </button>
+      ) : (
+        <div className="bg-[rgba(226,226,226,1)] flex w-full items-center justify-between gap-2 text-base text-black font-normal p-4 sm:p-6 border-[rgba(209,209,209,1)] border-t flex-shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              updateQuantity(product.id, quantity - 1);
+            }}
+            className="flex items-center justify-center w-8 h-8 hover:bg-[rgba(216,216,216,1)] rounded-full transition-colors"
+          >
+            -
+          </button>
+          <span className="flex-1 text-center">
+            In cart ({quantity})
+          </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              updateQuantity(product.id, quantity + 1);
+            }}
+            className="flex items-center justify-center w-8 h-8 hover:bg-[rgba(216,216,216,1)] rounded-full transition-colors"
+          >
+            +
+          </button>
+        </div>
+      )}
     </article>
   );
 };

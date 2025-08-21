@@ -17,12 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const { getTotalItems } = useCart();
   const navigate = useNavigate();
 
-  const navigationItems = [
-    { label: 'Store', href: '#store' },
-    { label: 'The Tea Encyclopedia', href: '#encyclopedia' },
-    { label: 'About', href: '#about' },
-    { label: 'Producers', href: '#producers' }
-  ];
+  const navigationItems: { label: string; href: string }[] = [];
 
   return (
     <>
@@ -49,6 +44,14 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
         {/* Right Side - Icons */}
         <div className="flex items-center gap-2 md:gap-3 text-[rgba(76,76,76,1)]">
+          {/* About Link - Show on desktop */}
+          <a
+            href="#about"
+            className="hidden xl:flex items-center gap-2.5 justify-center px-3 py-1.5 hover:bg-gray-50 transition-colors whitespace-nowrap text-black text-center"
+          >
+            <span>About</span>
+          </a>
+          
           {/* Language Dropdown - Show on tablet+ */}
           <div className="hidden md:flex items-center gap-[3px] pl-2 md:pl-3 pr-1 md:pr-1.5 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors">
             <span className="text-xs md:text-sm">{selectedLanguage}</span>
@@ -135,16 +138,13 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
             {/* Mobile Navigation */}
             <nav className="flex-1 flex flex-col p-4 space-y-2">
-              {navigationItems.map((item, index) => (
-                <a
-                  key={index}
-                  href={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
+              <a
+                href="#about"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                About
+              </a>
             </nav>
 
             {/* Mobile Footer Actions */}

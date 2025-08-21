@@ -26,12 +26,14 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsDragging(true);
     setStartX(e.clientX);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
+    e.preventDefault();
     const currentX = e.clientX;
     const diff = startX - currentX;
     setTranslateX(diff);
@@ -41,7 +43,7 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
     if (!isDragging) return;
     setIsDragging(false);
     
-    if (Math.abs(translateX) > 50) {
+    if (Math.abs(translateX) > 30) {
       if (translateX > 0) {
         nextImage();
       } else {
@@ -52,17 +54,19 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     setStartX(e.touches[0].clientX);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
     const currentX = e.touches[0].clientX;
     const diff = startX - currentX;
     setTranslateX(diff);
   };
 
   const handleTouchEnd = () => {
-    if (Math.abs(translateX) > 50) {
+    if (Math.abs(translateX) > 30) {
       if (translateX > 0) {
         nextImage();
       } else {
@@ -101,7 +105,9 @@ const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) 
           <img
             src={safeImages[currentImageIndex]}
             alt={`${productName} - Image ${currentImageIndex + 1}`}
-            className="w-full h-auto aspect-square object-cover shadow-sm transition-transform duration-200"
+            className={`w-full h-auto aspect-square object-cover shadow-sm transition-transform duration-200 ${
+              isDragging ? 'opacity-90' : 'opacity-100'
+            }`}
             style={{
               transform: `translateX(${-translateX}px)`,
             }}
