@@ -22,12 +22,12 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
       />
       
       {/* Sidebar */}
-      <div className={`fixed right-0 top-0 h-full w-full max-w-md bg-white z-50 transform transition-transform duration-300 ease-in-out shadow-2xl ${
+      <div className={`fixed right-0 top-0 h-screen w-full max-w-md bg-white z-50 transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${
         isOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
         
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
+        <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5" />
             <h2 className="text-xl font-medium">Səbət</h2>
@@ -44,7 +44,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Cart Content */}
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col flex-1 min-h-0">
           {cart.length === 0 ? (
             // Empty Cart
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
@@ -55,7 +55,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
           ) : (
             <>
               {/* Cart Items */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
                     {/* Product Image */}
@@ -118,7 +118,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
               </div>
 
               {/* Footer */}
-              <div className="border-t bg-white p-6 space-y-4">
+              <div className="border-t bg-white p-6 space-y-4 flex-shrink-0">
                 {/* Clear Cart */}
                 <button
                   onClick={clearCart}
