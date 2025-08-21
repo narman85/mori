@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { CartSidebar } from './CartSidebar';
 
@@ -12,6 +13,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { getTotalItems } = useCart();
+  const navigate = useNavigate();
 
   const navigationItems = [
     { label: 'Store', href: '#store' },
@@ -65,7 +67,10 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           </button>
           
           {/* User Account - Show on tablet+ */}
-          <button className="hidden md:block aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity">
+          <button 
+            onClick={() => navigate('/auth')}
+            className="hidden md:block aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity"
+          >
             <img
               src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
               alt="User account"
@@ -148,7 +153,13 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                   />
                   <span>Axtarış</span>
                 </button>
-                <button className="flex items-center gap-2 p-3 hover:bg-gray-50 rounded-lg">
+                <button 
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 p-3 hover:bg-gray-50 rounded-lg"
+                >
                   <img
                     src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
                     alt="User account"
