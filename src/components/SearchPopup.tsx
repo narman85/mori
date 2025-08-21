@@ -33,7 +33,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({ isOpen, onClose }) => 
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Çay axtarın..."
+              placeholder="Search for tea..."
               className="w-full pl-10 pr-4 py-3 focus:outline-none text-lg bg-transparent"
               autoFocus
             />
@@ -53,10 +53,10 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({ isOpen, onClose }) => 
           {searchTerm.trim() !== '' && (
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900">
-                "{searchTerm}" üçün nəticələr
+                "Results for {searchTerm}"
               </h3>
               <div className="text-gray-500 text-center py-8">
-                Axtarış funksiyası hələ hazırlanmaqdadır...
+                Search function is coming soon...
               </div>
             </div>
           )}

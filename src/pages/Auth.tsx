@@ -28,8 +28,8 @@ const Auth = () => {
     e.preventDefault();
     if (!email || !password) {
       toast({
-        title: 'Xəta',
-        description: 'Zəhmət olmasa bütün sahələri doldurun',
+        title: "Error",
+        description: "Please fill in all fields",
         variant: 'destructive',
       });
       return;
@@ -43,33 +43,33 @@ const Auth = () => {
         : await signUp(email, password);
 
       if (error) {
-        let errorMessage = 'Xəta baş verdi';
+        let errorMessage = "An error occurred";
         
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage = 'Email və ya şifrə yanlışdır';
-        } else if (error.message.includes('User already registered')) {
-          errorMessage = 'Bu email artıq qeydiyyatdan keçib';
-        } else if (error.message.includes('Password should be at least 6 characters')) {
-          errorMessage = 'Şifrə ən azı 6 simvol olmalıdır';
+        if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "Email or password is incorrect";
+        } else if (error.message.includes("User already registered")) {
+          errorMessage = "This email is already registered";
+        } else if (error.message.includes("Password should be at least 6 characters")) {
+          errorMessage = "Password must be at least 6 characters";
         }
         
         toast({
-          title: 'Xəta',
+          title: "Error",
           description: errorMessage,
-          variant: 'destructive',
+          variant: "destructive",
         });
       } else if (!isLogin) {
         toast({
-          title: 'Uğurlu!',
-          description: 'Qeydiyyat tamamlandı. Email hesabınızı yoxlayın.',
+          title: "Success!",
+          description: "Registration completed. Check your email.",
         });
         setIsLogin(true);
       }
     } catch (err) {
       toast({
-        title: 'Xəta',
-        description: 'Gözlənilməz xəta baş verdi',
-        variant: 'destructive',
+        title: "Error",
+        description: "Unexpected error occurred",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -81,12 +81,12 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">
-            {isLogin ? 'Daxil ol' : 'Qeydiyyat'}
+            {isLogin ? "Sign In" : "Sign Up"}
           </CardTitle>
           <CardDescription>
             {isLogin 
-              ? 'Hesabınıza daxil olun' 
-              : 'Yeni hesab yaradın'
+              ? "Sign in to your account" 
+              : "Create a new account"
             }
           </CardDescription>
         </CardHeader>
@@ -99,19 +99,19 @@ const Auth = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email daxil edin"
+                placeholder="Enter email"
                 disabled={loading}
               />
             </div>
             
             <div className="space-y-2">
-              <Label htmlFor="password">Şifrə</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Şifrə daxil edin"
+                placeholder="Enter password"
                 disabled={loading}
               />
             </div>
@@ -122,8 +122,8 @@ const Auth = () => {
               disabled={loading}
             >
               {loading 
-                ? (isLogin ? 'Daxil olunur...' : 'Qeydiyyat olunur...') 
-                : (isLogin ? 'Daxil ol' : 'Qeydiyyat ol')
+                ? (isLogin ? "Signing in..." : "Signing up...") 
+                : (isLogin ? "Sign In" : "Sign Up")
               }
             </Button>
 
@@ -135,8 +135,8 @@ const Auth = () => {
                 disabled={loading}
               >
                 {isLogin 
-                  ? 'Hesabınız yoxdur? Qeydiyyatdan keçin' 
-                  : 'Hesabınız var? Daxil olun'
+                  ? "Don't have an account? Sign up" 
+                  : "Have an account? Sign in"
                 }
               </Button>
             </div>

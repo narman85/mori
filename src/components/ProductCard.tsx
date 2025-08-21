@@ -36,11 +36,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500));
       addToCart(product);
-      toast.success(`${product.name} əlavə edildi`, {
-        description: "Səbəti açmaq üçün düyməyə basın",
+      toast.success(`${product.name} added`, {
+        description: "Click to open cart",
         duration: 3000,
         action: {
-          label: "Səbəti aç",
+          label: "Open cart",
           onClick: () => onCartOpen?.()
         }
       });
@@ -51,7 +51,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
   const hasDiscount = product.originalPrice && product.originalPrice > product.price;
   
-  // Çay şəkillər - məhsul tipinə görə
+  // Tea images - by product type
   const getTeaImage = (productName: string) => {
     if (productName.toLowerCase().includes('matcha')) {
       return 'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=200&h=200&fit=crop&crop=center';
@@ -70,7 +70,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     >
       {/* Product Image */}
       <div className="w-full flex-shrink-0 relative overflow-hidden">
-        {/* Orijinal şəkil */}
+        {/* Original image */}
         <img
           src={product.image}
           alt={product.name}
@@ -79,10 +79,10 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           }`}
         />
         
-        {/* Hover şəkil - overlay */}
+        {/* Hover image - overlay */}
         <img
           src={getTeaImage(product.name)}
-          alt={`${product.name} hazır çay`}
+          alt={`${product.name} prepared tea`}
           className={`absolute inset-0 aspect-[1.06] object-cover w-full transition-opacity duration-[1500ms] ease-in-out ${
             isHovered ? 'opacity-100' : 'opacity-0'
           }`}

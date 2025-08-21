@@ -30,7 +30,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
         <div className="flex items-center justify-between p-6 border-b flex-shrink-0">
           <div className="flex items-center gap-2">
             <ShoppingBag className="w-5 h-5" />
-            <h2 className="text-xl font-medium">Səbət</h2>
+            <h2 className="text-xl font-medium">Cart</h2>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm">
               {cart.length}
             </span>
@@ -49,8 +49,8 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
             // Empty Cart
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
               <ShoppingBag className="w-16 h-16 text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Səbət boşdur</h3>
-              <p className="text-gray-500">Məhsul əlavə etmək üçün mağazaya baxın</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Cart is empty</h3>
+              <p className="text-gray-500">Browse the store to add products</p>
             </div>
           ) : (
             <>
@@ -109,7 +109,7 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                           {(item.price * item.quantity).toFixed(2)} EUR
                         </div>
                         <div className="text-xs text-gray-500">
-                          {item.price} EUR / ədəd
+                          {item.price} EUR / each
                         </div>
                       </div>
                     </div>
@@ -124,18 +124,18 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                   onClick={clearCart}
                   className="w-full text-sm text-gray-500 hover:text-red-500 transition-colors"
                 >
-                  Səbəti təmizlə
+                  Clear cart
                 </button>
                 
                 {/* Total */}
                 <div className="flex justify-between items-center text-lg font-medium">
-                  <span>Cəmi:</span>
+                  <span>Total:</span>
                   <span>{getTotalPrice().toFixed(2)} EUR</span>
                 </div>
                 
                 {/* Checkout Button */}
                 <Button className="w-full bg-black hover:bg-gray-800 text-white py-3">
-                  Ödəniş et
+                  Checkout
                 </Button>
               </div>
             </>

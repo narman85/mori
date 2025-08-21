@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                     alt="Search"
                     className="w-5 h-5"
                   />
-                  <span>Axtarış</span>
+                  <span>Search</span>
                 </button>
                 <button 
                   onClick={() => {
@@ -176,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                     alt="User account"
                     className="w-5 h-5"
                   />
-                  <span>Hesab</span>
+                  <span>Account</span>
                 </button>
               </div>
               
