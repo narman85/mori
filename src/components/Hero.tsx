@@ -16,7 +16,7 @@ export const Hero: React.FC<HeroProps> = ({ className = '' }) => {
       <img
         src="https://api.builder.io/api/v1/image/assets/TEMP/f4646c48a87e2fa35b1793686a774f13e6cc12f2?placeholderIfAbsent=true"
         alt="Japanese tea ceremony scene"
-        className="aspect-[1.8] object-contain w-full max-w-[1375px] mt-[50px] max-md:max-w-full max-md:mt-10"
+        className="aspect-[1.8] object-contain w-full max-w-[900px] mt-[40px] max-md:max-w-full max-md:mt-8"
       />
     </section>
   );
