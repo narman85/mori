@@ -83,7 +83,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
 
   return (
     <section className={`px-8 max-md:px-4 ${className}`}>
-      <h2 className="text-black text-2xl font-normal leading-none text-center mt-[30px] max-md:text-[24px] max-md:mt-6">
+      <h2 className="text-black text-5xl font-normal leading-none text-center mt-[30px] max-md:text-[36px] max-md:mt-6">
         Selection
       </h2>
       
