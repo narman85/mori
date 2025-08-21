@@ -22,16 +22,16 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
 
   return (
     <>
-      <header className={`self-stretch flex w-full items-center justify-between text-sm font-normal leading-none px-4 md:px-[150px] py-3 border-[rgba(239,239,239,1)] border-b ${className}`}>
+      <header className={`self-stretch flex w-full items-center justify-between text-sm font-normal leading-none px-4 md:px-8 lg:px-[150px] py-3 border-[rgba(239,239,239,1)] border-b ${className}`}>
         {/* Logo */}
         <img
           src="https://api.builder.io/api/v1/image/assets/TEMP/7d22d1b387c53084b9023edc3e88327476f862b4?placeholderIfAbsent=true"
           alt="Tea Company Logo"
-          className="aspect-[4.37] object-contain w-[105px] md:w-[105px] w-20 flex-shrink-0"
+          className="aspect-[4.37] object-contain w-20 md:w-[90px] lg:w-[105px] flex-shrink-0"
         />
         
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6 text-black text-center">
+        {/* Desktop & Tablet Navigation */}
+        <nav className="hidden lg:flex items-center gap-6 text-black text-center">
           {navigationItems.map((item, index) => (
             <a
               key={index}
@@ -44,19 +44,19 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         </nav>
 
         {/* Right Side - Icons */}
-        <div className="flex items-center gap-3 text-[rgba(76,76,76,1)]">
-          {/* Language Dropdown - Hidden on small mobile */}
-          <div className="hidden sm:flex items-center gap-[3px] pl-3 pr-1.5 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors">
-            <span>{selectedLanguage}</span>
+        <div className="flex items-center gap-2 md:gap-3 text-[rgba(76,76,76,1)]">
+          {/* Language Dropdown - Show on tablet+ */}
+          <div className="hidden md:flex items-center gap-[3px] pl-2 md:pl-3 pr-1 md:pr-1.5 py-1.5 cursor-pointer hover:bg-gray-50 transition-colors">
+            <span className="text-xs md:text-sm">{selectedLanguage}</span>
             <img
               src="https://api.builder.io/api/v1/image/assets/TEMP/cbbb23b1d46a928bedc44136fefc0297f6355812?placeholderIfAbsent=true"
               alt="Language dropdown"
-              className="aspect-[1] object-contain w-3"
+              className="aspect-[1] object-contain w-2.5 md:w-3"
             />
           </div>
           
-          {/* Search Icon - Hidden on small mobile */}
-          <button className="hidden sm:block aspect-[1] object-contain w-6 hover:opacity-70 transition-opacity">
+          {/* Search Icon - Show on tablet+ */}
+          <button className="hidden md:block aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity">
             <img
               src="https://api.builder.io/api/v1/image/assets/TEMP/dbe42f7a2a6777f499b0c6e0cb6e210b255341e3?placeholderIfAbsent=true"
               alt="Search"
@@ -64,8 +64,8 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
             />
           </button>
           
-          {/* User Account - Hidden on small mobile */}
-          <button className="hidden sm:block aspect-[1] object-contain w-6 hover:opacity-70 transition-opacity">
+          {/* User Account - Show on tablet+ */}
+          <button className="hidden md:block aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity">
             <img
               src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
               alt="User account"
@@ -76,7 +76,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           {/* Cart Button */}
           <button 
             onClick={() => setIsCartOpen(true)}
-            className="relative aspect-[1] object-contain w-6 hover:opacity-70 transition-opacity"
+            className="relative aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity"
           >
             <img
               src="https://api.builder.io/api/v1/image/assets/TEMP/98f20a3e4542a7e60e90d13193239cb2efd2290d?placeholderIfAbsent=true"
@@ -84,16 +84,16 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               className="w-full h-full"
             />
             {getTotalItems() > 0 && (
-              <span className="absolute -top-2 -right-2 bg-[rgba(173,29,24,1)] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+              <span className="absolute -top-1.5 md:-top-2 -right-1.5 md:-right-2 bg-[rgba(173,29,24,1)] text-white text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center font-medium">
                 {getTotalItems()}
               </span>
             )}
           </button>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile & Tablet Menu Button */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="lg:hidden p-1.5 md:p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             {isMobileMenuOpen ? (
               <X className="w-5 h-5" />
@@ -104,9 +104,9 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         </div>
       </header>
 
-      {/* Mobile Menu Overlay */}
+      {/* Mobile & Tablet Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-50 bg-white">
+        <div className="lg:hidden fixed inset-0 z-50 bg-white">
           <div className="flex flex-col h-full">
             {/* Mobile Header */}
             <div className="flex items-center justify-between p-4 border-b">
