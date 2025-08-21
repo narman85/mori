@@ -100,11 +100,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
 
   return (
     <section className={className}>
-      <h2 className="text-black text-6xl font-normal leading-none text-center mt-[50px] max-md:text-[40px] max-md:mt-10">
+      <h2 className="text-black text-4xl font-normal leading-none text-center mt-[40px] max-md:text-[32px] max-md:mt-8">
         Selection
       </h2>
       
-      <div className="flex w-full max-w-[1428px] gap-[48px_20px] flex-wrap mt-[50px] max-md:max-w-full max-md:mt-10">
+      <div className="flex w-full max-w-[1428px] gap-[48px_20px] flex-wrap mt-[35px] max-md:max-w-full max-md:mt-8">
         {products.map((product) => (
           <ProductCard
             key={product.id}
