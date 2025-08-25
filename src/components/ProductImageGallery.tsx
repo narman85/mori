@@ -5,17 +5,31 @@ import { Button } from '@/components/ui/button';
 interface ProductImageGalleryProps {
   images?: string[];
   productName: string;
+  excludeHoverImage?: boolean; // Hide last image if it's a hover image
 }
 
-const ProductImageGallery = ({ images, productName }: ProductImageGalleryProps) => {
+const ProductImageGallery = ({ images, productName, excludeHoverImage = false }: ProductImageGalleryProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
   const imageRef = useRef<HTMLDivElement>(null);
 
-  // Fallback to default image if images is empty or undefined
-  const safeImages = images && images.length > 0 ? images : ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center'];
+  // Filter out hover image (last image) if excludeHoverImage is true
+  const processedImages = (() => {
+    if (!images || images.length === 0) {
+      return ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center'];
+    }
+    
+    if (excludeHoverImage && images.length > 1) {
+      // Remove last image (hover image) from gallery
+      return images.slice(0, -1);
+    }
+    
+    return images;
+  })();
+
+  const safeImages = processedImages;
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % safeImages.length);

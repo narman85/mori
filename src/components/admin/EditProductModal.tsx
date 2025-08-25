@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,15 +11,40 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X } from 'lucide-react';
 import DraggableImageGrid from './DraggableImageGrid';
 
-interface AddProductModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onProductAdded: () => void;
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  in_stock: boolean;
+  featured: boolean;
+  image?: string[];
+  preparation?: {
+    amount: string;
+    temperature: string;
+    steepTime: string;
+    taste: string;
+  };
 }
 
-const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, onProductAdded }) => {
+interface EditProductModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onProductUpdated: () => void;
+  product: Product | null;
+}
+
+const EditProductModal: React.FC<EditProductModalProps> = ({ 
+  open, 
+  onOpenChange, 
+  onProductUpdated, 
+  product 
+}) => {
   const [loading, setLoading] = useState(false);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [mainImages, setMainImages] = useState<File[]>([]);
+  const [hoverImage, setHoverImage] = useState<File | null>(null);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -36,9 +61,6 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
     }
   });
 
-  const [mainImages, setMainImages] = useState<File[]>([]);
-  const [hoverImage, setHoverImage] = useState<File | null>(null);
-
   const categories = [
     'Black Tea',
     'Green Tea',
@@ -50,6 +72,36 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
     'Gift Sets',
     'Other'
   ];
+
+  // Load product data when modal opens
+  useEffect(() => {
+    if (product && open) {
+      setFormData({
+        name: product.name || '',
+        description: product.description || '',
+        price: product.price?.toString() || '',
+        category: product.category || '',
+        in_stock: product.in_stock ?? true,
+        preparation: product.preparation || {
+          amount: '',
+          temperature: '',
+          steepTime: '',
+          taste: ''
+        }
+      });
+      
+      // Set existing images
+      if (product.image && product.image.length > 0) {
+        const imageUrls = product.image.map(img => pb.files.getURL(product, img));
+        setExistingImages(imageUrls);
+      } else {
+        setExistingImages([]);
+      }
+      
+      setMainImages([]);
+      setHoverImage(null);
+    }
+  }, [product, open]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -94,13 +146,16 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
       if (validFiles.length > 0) {
         setMainImages(prev => {
           const combined = [...prev, ...validFiles];
-          if (combined.length > 4) {
+          const totalWithExisting = existingImages.length + combined.length + (hoverImage ? 1 : 0);
+          
+          if (totalWithExisting > 5) {
+            const maxAllowed = 5 - existingImages.length - (hoverImage ? 1 : 0);
             toast({
               title: "Too Many Images",
-              description: `Maximum 4 main images allowed. Only first 4 will be kept.`,
+              description: `Maximum 5 total images allowed. You can add ${maxAllowed} more main images.`,
               variant: "destructive",
             });
-            return combined.slice(0, 4);
+            return combined.slice(0, Math.max(0, maxAllowed));
           }
           return combined;
         });
@@ -122,9 +177,21 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
         return;
       }
 
+      // Check if adding hover image would exceed limit
+      const totalWithHover = existingImages.length + mainImages.length + 1;
+      if (totalWithHover > 5) {
+        toast({
+          title: "Too Many Images",
+          description: `Maximum 5 total images allowed. Cannot add hover image.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setHoverImage(file);
     }
   };
+
 
   const removeMainImage = (index: number) => {
     setMainImages(prev => prev.filter((_, i) => i !== index));
@@ -132,6 +199,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
 
   const removeHoverImage = () => {
     setHoverImage(null);
+  };
+
+  const removeExistingImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const resetForm = () => {
@@ -148,13 +219,15 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
         taste: ''
       }
     });
-    setImageFiles([]);
     setMainImages([]);
     setHoverImage(null);
+    setExistingImages([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!product) return;
 
     if (!formData.name || !formData.price) {
       toast({
@@ -165,7 +238,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
       return;
     }
 
-    if (isNaN(Number(formData.price)) || Number(formData.price) <= 0) {
+    const priceValue = parseFloat(formData.price);
+    if (isNaN(priceValue) || priceValue <= 0) {
       toast({
         title: "Error",
         description: "Please enter a valid price",
@@ -174,99 +248,159 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
       return;
     }
 
-    // Check if user is authenticated
-    if (!pb.authStore.isValid) {
-      toast({
-        title: "Error",
-        description: "You must be logged in to add products",
-        variant: "destructive",
-      });
-      return;
-    }
-
-
     setLoading(true);
 
     try {
-      let record;
-
-      // Get the highest display_order and add 1 for new product
-      const existingProducts = await pb.collection('products').getFullList({
-        fields: 'display_order',
-        sort: '-display_order',
-        limit: 1
-      });
-      
-      const nextOrder = existingProducts.length > 0 
-        ? (existingProducts[0].display_order || 0) + 1 
-        : 1;
-
-      // Check preparation data
       const hasPreparationData = Object.values(formData.preparation).some(value => value.trim() !== '');
 
       // Combine main images and hover image
-      const allImages = [...mainImages];
+      const allNewImages = [...mainImages];
       if (hoverImage) {
-        allImages.push(hoverImage);
+        allNewImages.push(hoverImage);
       }
 
-      // If we have images, use FormData for everything
-      if (allImages.length > 0) {
-        const data = new FormData();
-        
-        // Add all fields to FormData
-        data.append('name', formData.name);
-        data.append('description', formData.description || '');
-        data.append('price', formData.price);
-        data.append('category', formData.category || '');
-        data.append('in_stock', formData.in_stock.toString());
-        data.append('display_order', nextOrder.toString());
-        
-        // Add preparation data as JSON string if any field is filled
-        if (hasPreparationData) {
-          data.append('preparation', JSON.stringify(formData.preparation));
-        }
-        
-        // Add images - each file separately
-        allImages.forEach((file) => {
-          data.append('image', file);
-        });
-
-        
-        record = await pb.collection('products').create(data);
-        
-      } else {
-        // No images - use simple JSON object
-        const productData: any = {
-          name: formData.name,
-          description: formData.description || '',
-          price: parseFloat(formData.price),
-          category: formData.category || '',
-          in_stock: formData.in_stock,
-          display_order: nextOrder,
-        };
-
-        // Add preparation data if any field is filled
-        if (hasPreparationData) {
-          productData.preparation = formData.preparation;
-        }
-        record = await pb.collection('products').create(productData);
-      }
-
+      // Check if images have been modified (either existing images removed or new images added)
+      const originalImageCount = product.image?.length || 0;
+      const currentExistingCount = existingImages.length;
+      const newImageCount = allNewImages.length;
+      const imagesHaveChanged = (currentExistingCount !== originalImageCount) || (newImageCount > 0);
       
+      // When images change, we need to determine the final strategy:
+      // - If user added new images: REPLACE ALL with only new images (ignore existing)
+      // - If user only removed existing: CLEAR all images
+      const willReplaceWithNewImages = newImageCount > 0;
+      const finalImageCount = willReplaceWithNewImages ? newImageCount : 0;
+
+      console.log('Edit Product - Image Analysis:', {
+        name: formData.name,
+        price: formData.price,
+        originalImageCount,
+        currentExistingCount,
+        newImageCount,
+        imagesHaveChanged,
+        willReplaceWithNewImages,
+        finalImageCount,
+        hasPreparationData,
+        preparationData: formData.preparation,
+        productId: product.id
+      });
+
+      // Start with minimal required fields only
+      const productData: any = {
+        name: formData.name,
+        price: priceValue,
+        in_stock: formData.in_stock,
+      };
+
+      // Add optional fields only if they have values
+      if (formData.description) {
+        productData.description = formData.description;
+      }
+      
+      if (formData.category) {
+        productData.category = formData.category;
+      }
+
+      if (product.display_order) {
+        productData.display_order = product.display_order;
+      }
+
+      // Add preparation data only if it has content
+      if (hasPreparationData) {
+        productData.preparation = formData.preparation;
+      }
+
+      console.log('Updating product with data:', productData);
+
+      // If images have been modified, we need to handle image replacement
+      if (imagesHaveChanged) {
+        console.log(`Images changed - Strategy: ${willReplaceWithNewImages ? 'Replace with new' : 'Clear all'}, final count: ${finalImageCount}`);
+        
+        if (finalImageCount > 5) {
+          toast({
+            title: "Too Many Images",
+            description: `Maximum 5 images allowed. You're uploading ${finalImageCount} images.`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (newImageCount === 0) {
+          // User removed all existing images but didn't add new ones - clear images
+          console.log('Clearing all images...');
+          const updateData = { ...productData, image: [] };
+          await pb.collection('products').update(product.id, updateData);
+        } else {
+          // User added new images - replace all images with new ones only
+          // Note: This replaces ALL existing images with only the NEW uploaded images
+          const data = new FormData();
+          
+          // Add all text fields to FormData
+          data.append('name', formData.name);
+          data.append('description', formData.description || '');
+          data.append('price', priceValue.toString());
+          data.append('category', formData.category || '');
+          data.append('in_stock', formData.in_stock.toString());
+          data.append('display_order', (product.display_order || 0).toString());
+          
+          // Add preparation data as JSON string if any field is filled
+          if (hasPreparationData) {
+            data.append('preparation', JSON.stringify(formData.preparation));
+          } else {
+            data.append('preparation', '');
+          }
+          
+          // Add only the new images - this will replace all existing images
+          console.log('Adding new images to FormData:', allNewImages.map(f => f.name));
+          allNewImages.forEach((file, index) => {
+            console.log(`Appending image ${index + 1}:`, file.name, `Size: ${file.size} bytes`);
+            data.append('image', file);
+          });
+
+          console.log('FormData contents before sending:');
+          for (let pair of data.entries()) {
+            if (pair[0] === 'image') {
+              console.log(`- ${pair[0]}: File(${(pair[1] as File).name})`);
+            } else {
+              console.log(`- ${pair[0]}: ${pair[1]}`);
+            }
+          }
+
+          console.log('Replacing all images with new uploads...');
+          await pb.collection('products').update(product.id, data);
+        }
+      } else {
+        // No new images - just update text fields
+        await pb.collection('products').update(product.id, productData);
+      }
+
       toast({
         title: "Success!",
-        description: "Product added successfully",
+        description: "Product updated successfully",
       });
 
       resetForm();
       onOpenChange(false);
-      onProductAdded();
+      onProductUpdated();
 
     } catch (error: any) {
+      console.error('Edit Product Error:', error);
+      console.error('Error details:', {
+        status: error.status,
+        response: error.response,
+        data: error.response?.data,
+        message: error.message,
+        url: error.url
+      });
+      
+      // Log the exact data that caused the error
+      if (error.response?.data) {
+        console.error('PocketBase error data:', JSON.stringify(error.response.data, null, 2));
+      }
+      
       toast({
         title: "Error",
-        description: error.response?.data?.message || error.message || "Failed to create product",
+        description: error.response?.data?.message || error.message || "Failed to update product",
         variant: "destructive",
       });
     } finally {
@@ -278,9 +412,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
+          <DialogTitle>Edit Product</DialogTitle>
           <DialogDescription>
-            Add a new product to your store. Fill in the details below.
+            Update product information and details.
           </DialogDescription>
         </DialogHeader>
 
@@ -312,7 +446,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
           {/* Price and Category */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Price ($) *</Label>
+              <Label htmlFor="price">Price (€) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -326,7 +460,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Select onValueChange={(value) => handleInputChange('category', value)}>
+              <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
@@ -341,11 +475,47 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
             </div>
           </div>
 
-          {/* Main Product Images */}
+          {/* Existing Images */}
+          {existingImages.length > 0 && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-base font-medium">Current Images</Label>
+                <p className="text-sm text-gray-500 mt-1">Existing product images</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {existingImages.map((imageUrl, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={imageUrl}
+                      alt={`Current ${index + 1}`}
+                      className="w-full h-24 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <div className="absolute bottom-1 left-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
+                      Current {index + 1}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* New Main Images */}
           <div className="space-y-4">
             <div>
-              <Label className="text-base font-medium">Main Product Images</Label>
-              <p className="text-sm text-gray-500 mt-1">Upload up to 4 main product images (10MB each)</p>
+              <Label className="text-base font-medium">Add New Main Images</Label>
+              <p className="text-sm text-gray-500 mt-1">Upload up to 4 new main product images (10MB each)</p>
+              {existingImages.length > 0 && (
+                <p className="text-sm text-amber-600 mt-1 font-medium">
+                  ⚠️ Adding new images will replace ALL existing images
+                </p>
+              )}
             </div>
             
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
@@ -353,7 +523,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
               <div className="space-y-2">
                 <Label htmlFor="main-images" className="cursor-pointer">
                   <span className="text-sm font-medium text-blue-600 hover:text-blue-500">
-                    Click to upload main images
+                    Click to upload new main images
                   </span>
                   <span className="text-sm text-gray-500 block">or drag and drop</span>
                 </Label>
@@ -374,17 +544,22 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                 images={mainImages}
                 onReorder={setMainImages}
                 onRemove={removeMainImage}
-                labelPrefix="Main"
-                labelColor="bg-black bg-opacity-50"
+                labelPrefix="New Main"
+                labelColor="bg-green-500"
               />
             )}
           </div>
 
-          {/* Hover Image */}
+          {/* New Hover Image */}
           <div className="space-y-4">
             <div>
-              <Label className="text-base font-medium">Hover Image (Optional)</Label>
-              <p className="text-sm text-gray-500 mt-1">Image shown when hovering over product card</p>
+              <Label className="text-base font-medium">Add New Hover Image (Optional)</Label>
+              <p className="text-sm text-gray-500 mt-1">New image to show when hovering over product card</p>
+              {existingImages.length > 0 && (
+                <p className="text-sm text-amber-600 mt-1 font-medium">
+                  ⚠️ Adding new images will replace ALL existing images
+                </p>
+              )}
             </div>
             
             <div className="border-2 border-dashed border-orange-300 rounded-lg p-4 text-center hover:border-orange-400 transition-colors">
@@ -393,7 +568,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                   <div className="relative inline-block">
                     <img
                       src={URL.createObjectURL(hoverImage)}
-                      alt="Hover preview"
+                      alt="New hover preview"
                       className="w-24 h-24 object-cover rounded-lg border mx-auto"
                     />
                     <button
@@ -404,7 +579,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                       <X className="h-3 w-3" />
                     </button>
                     <div className="absolute bottom-1 left-1 bg-orange-500 text-white text-xs px-1 py-0.5 rounded">
-                      Hover
+                      New Hover
                     </div>
                   </div>
                 ) : (
@@ -414,7 +589,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                     </div>
                     <Label htmlFor="hover-image" className="cursor-pointer">
                       <span className="text-sm font-medium text-orange-600 hover:text-orange-500">
-                        Click to upload hover image
+                        Click to upload new hover image
                       </span>
                     </Label>
                   </>
@@ -436,12 +611,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
               <Label className="text-base font-medium">Tea Preparation Guide (Optional)</Label>
             </div>
             <p className="text-sm text-gray-500 mb-4">
-              Fill these fields if this is a tea product to show preparation instructions
+              Update preparation instructions for tea products
             </p>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="prep-amount">Amount (e.g., "1 tsp per cup")</Label>
+                <Label htmlFor="prep-amount">Amount</Label>
                 <Input
                   id="prep-amount"
                   value={formData.preparation.amount}
@@ -450,7 +625,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prep-temperature">Temperature (e.g., "80-85°C")</Label>
+                <Label htmlFor="prep-temperature">Temperature</Label>
                 <Input
                   id="prep-temperature"
                   value={formData.preparation.temperature}
@@ -462,7 +637,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="prep-steeptime">Steep Time (e.g., "2-3 minutes")</Label>
+                <Label htmlFor="prep-steeptime">Steep Time</Label>
                 <Input
                   id="prep-steeptime"
                   value={formData.preparation.steepTime}
@@ -471,7 +646,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prep-taste">Taste Profile (e.g., "Light & floral")</Label>
+                <Label htmlFor="prep-taste">Taste Profile</Label>
                 <Input
                   id="prep-taste"
                   value={formData.preparation.taste}
@@ -505,7 +680,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
             </Button>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Add Product
+              Update Product
             </Button>
           </DialogFooter>
         </form>
@@ -514,4 +689,4 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
   );
 };
 
-export default AddProductModal;
+export default EditProductModal;

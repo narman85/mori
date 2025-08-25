@@ -21,6 +21,12 @@ interface DetailProduct {
   stock?: number;
   created: string;
   updated: string;
+  preparation?: {
+    amount: string;
+    temperature: string;
+    steepTime: string;
+    taste: string;
+  };
 }
 
 
@@ -40,6 +46,17 @@ const ProductDetail = () => {
       try {
         setLoading(true);
         const record = await pb.collection('products').getOne<DetailProduct>(id);
+        
+        // Parse preparation data if it's a string
+        if (record.preparation && typeof record.preparation === 'string') {
+          try {
+            record.preparation = JSON.parse(record.preparation);
+          } catch (parseError) {
+            console.warn('Could not parse preparation data:', parseError);
+            record.preparation = undefined;
+          }
+        }
+        
         setProduct(record);
       } catch (error) {
         console.error('Error fetching product:', error);
@@ -158,6 +175,7 @@ const ProductDetail = () => {
                   <ProductImageGallery 
                     images={productImages} 
                     productName={product.name}
+                    excludeHoverImage={true}
                   />
                 ) : (
                   <div className="aspect-square bg-gray-100 flex items-center justify-center rounded-lg">
@@ -259,6 +277,14 @@ const ProductDetail = () => {
               </div>
             </div>
           </div>
+
+          {/* Tea Preparation Guide */}
+          {product.preparation && (
+            <TeaPreparationGuide 
+              preparation={product.preparation}
+              productName={product.name}
+            />
+          )}
 
           {/* Additional Product Info */}
           <div className="mt-12 pt-8 border-t border-gray-200">

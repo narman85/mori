@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, GripVertical } from 'lucide-react';
 import { pb } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import AddProductModal from '@/components/admin/AddProductModal';
+import EditProductModal from '@/components/admin/EditProductModal';
+import SimpleDragCard from '@/components/admin/SimpleDragCard';
+import { DndProvider } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 
 interface Product {
   id: string;
@@ -14,16 +18,24 @@ interface Product {
   price: number;
   category: string;
   in_stock: boolean;
-  featured: boolean;
   image: string[];
   created: string;
   updated: string;
+  display_order?: number;
+  preparation?: {
+    amount: string;
+    temperature: string;
+    steepTime: string;
+    taste: string;
+  };
 }
 
 const ProductsManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { toast } = useToast();
 
   // Fetch products from PocketBase
@@ -31,7 +43,7 @@ const ProductsManagement = () => {
     try {
       setLoading(true);
       const records = await pb.collection('products').getFullList<Product>({
-        sort: '-created',
+        sort: '-display_order,-created',
       });
       setProducts(records);
     } catch (error) {
@@ -43,6 +55,45 @@ const ProductsManagement = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Edit product
+  const editProduct = (product: Product) => {
+    setSelectedProduct(product);
+    setShowEditModal(true);
+  };
+
+  // Move product (drag & drop)
+  const moveProduct = async (dragIndex: number, hoverIndex: number) => {
+    const draggedProduct = products[dragIndex];
+    
+    // Update local state immediately for smooth UX
+    const updatedProducts = [...products];
+    updatedProducts.splice(dragIndex, 1);
+    updatedProducts.splice(hoverIndex, 0, draggedProduct);
+    setProducts(updatedProducts);
+
+    // Update database immediately
+    try {
+      // Update all products with their new display_order based on current array position
+      const updatePromises = updatedProducts.map((product, index) => 
+        pb.collection('products').update(product.id, {
+          display_order: updatedProducts.length - index  // Higher number = first position
+        })
+      );
+      
+      await Promise.all(updatePromises);
+      
+    } catch (error) {
+      console.error('Error updating product order:', error);
+      toast({
+        title: "Error", 
+        description: "Failed to update product order",
+        variant: "destructive",
+      });
+      // Revert local changes on error
+      await fetchProducts();
     }
   };
 
@@ -86,20 +137,21 @@ const ProductsManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>
-          <p className="text-gray-600">Add, edit, and manage your products</p>
+    <DndProvider backend={HTML5Backend}>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Products Management</h1>
+            <p className="text-gray-600">Add, edit, and manage your products. Drag to reorder.</p>
+          </div>
+          <Button 
+            className="flex items-center gap-2"
+            onClick={() => setShowAddModal(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Add Product
+          </Button>
         </div>
-        <Button 
-          className="flex items-center gap-2"
-          onClick={() => setShowAddModal(true)}
-        >
-          <Plus className="h-4 w-4" />
-          Add Product
-        </Button>
-      </div>
 
       {products.length === 0 ? (
         <Card>
@@ -121,59 +173,15 @@ const ProductsManagement = () => {
       ) : (
         <div className="grid gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <Card key={product.id} className="overflow-hidden">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{product.name}</CardTitle>
-                      <CardDescription className="line-clamp-2">
-                        {product.description || 'No description'}
-                      </CardDescription>
-                    </div>
-                    <div className="flex gap-1 ml-2">
-                      <Button variant="ghost" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => deleteProduct(product.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-2xl font-bold text-green-600">
-                        ${product.price.toFixed(2)}
-                      </span>
-                      <div className="flex gap-2">
-                        {product.featured && (
-                          <Badge variant="secondary">Featured</Badge>
-                        )}
-                        <Badge 
-                          variant={product.in_stock ? "default" : "destructive"}
-                        >
-                          {product.in_stock ? "In Stock" : "Out of Stock"}
-                        </Badge>
-                      </div>
-                    </div>
-                    {product.category && (
-                      <p className="text-sm text-gray-600">
-                        Category: {product.category}
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      Created: {new Date(product.created).toLocaleDateString()}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+            {products.map((product, index) => (
+              <SimpleDragCard
+                key={product.id}
+                product={product}
+                index={index}
+                onEdit={editProduct}
+                onDelete={deleteProduct}
+                moveProduct={moveProduct}
+              />
             ))}
           </div>
         </div>
@@ -185,7 +193,16 @@ const ProductsManagement = () => {
         onOpenChange={setShowAddModal}
         onProductAdded={fetchProducts}
       />
-    </div>
+
+      {/* Edit Product Modal */}
+      <EditProductModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        onProductUpdated={fetchProducts}
+        product={selectedProduct}
+      />
+      </div>
+    </DndProvider>
   );
 };
 

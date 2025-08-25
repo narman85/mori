@@ -15,10 +15,10 @@ interface PocketBaseProduct {
   price: number;
   category: string;
   in_stock: boolean;
-  featured: boolean;
   image: string[];
   created: string;
   updated: string;
+  display_order?: number;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
@@ -34,7 +34,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
     try {
       setLoading(true);
       const records = await pb.collection('products').getFullList<PocketBaseProduct>({
-        sort: '-featured,-created',
+        sort: '-display_order,-created',
         filter: 'in_stock = true'
       });
 
@@ -48,7 +48,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
         images: record.image && record.image.length > 0
           ? record.image.map(img => pb.files.getURL(record, img))
           : ['https://via.placeholder.com/400x400?text=No+Image'],
-        originalPrice: record.featured ? record.price * 1.2 : undefined // Add discount for featured
+        originalPrice: undefined // Remove featured discount
       }));
 
       setProducts(transformedProducts);
