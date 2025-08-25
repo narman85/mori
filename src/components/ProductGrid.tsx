@@ -1,16 +1,61 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ProductCard, Product } from './ProductCard';
-import { useState } from 'react';
 import { CartSidebar } from './CartSidebar';
+import { pb } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProductGridProps {
   className?: string;
 }
 
+interface PocketBaseProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  in_stock: boolean;
+  featured: boolean;
+  image: string[];
+  created: string;
+  updated: string;
+}
+
 export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const products: Product[] = [
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const records = await pb.collection('products').getFullList<PocketBaseProduct>({
+        sort: '-featured,-created',
+        filter: 'in_stock = true'
+      });
+
+      // Transform PocketBase products to match our Product interface
+      const transformedProducts: Product[] = records.map(record => ({
+        id: record.id,
+        name: record.name,
+        description: record.description,
+        price: record.price,
+        weight: record.category || '100gr', // Use category as weight for now
+        images: record.image && record.image.length > 0
+          ? record.image.map(img => pb.files.getURL(record, img))
+          : ['https://via.placeholder.com/400x400?text=No+Image'],
+        originalPrice: record.featured ? record.price * 1.2 : undefined // Add discount for featured
+      }));
+
+      setProducts(transformedProducts);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      // Fallback to demo products if error
+      setProducts([
     {
       id: '1',
       name: 'Hōji-cha - Strong Roasted',
@@ -80,8 +125,11 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       originalPrice: 18,
       weight: '30gr',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
+    }]);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
 
   return (
@@ -92,15 +140,34 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       
       <div className="flex justify-center w-full">
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5 w-full max-w-[1428px] mt-[35px] max-md:mt-8">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={() => {}} // Bu artıq istifadə olunmur
-              onCartOpen={() => setIsCartOpen(true)}
-              className="w-full"
-            />
-          ))}
+          {loading ? (
+            // Loading skeletons
+            Array.from({ length: 8 }).map((_, index) => (
+              <div key={index} className="w-full">
+                <Skeleton className="aspect-square w-full rounded-lg" />
+                <Skeleton className="h-4 w-3/4 mt-3" />
+                <Skeleton className="h-4 w-1/2 mt-2" />
+                <Skeleton className="h-6 w-1/3 mt-3" />
+              </div>
+            ))
+          ) : products.length === 0 ? (
+            // No products message
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500 text-lg">No products available</p>
+              <p className="text-gray-400 text-sm mt-2">Please check back later</p>
+            </div>
+          ) : (
+            // Products grid
+            products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onAddToCart={() => {}} // Bu artıq istifadə olunmur
+                onCartOpen={() => setIsCartOpen(true)}
+                className="w-full"
+              />
+            ))
+          )}
         </div>
       </div>
       

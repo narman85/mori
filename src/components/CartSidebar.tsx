@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ interface CartSidebarProps {
 
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
+  const navigate = useNavigate();
 
   if (!isOpen) return null;
 
@@ -134,7 +136,13 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                 </div>
                 
                 {/* Checkout Button */}
-                <Button className="w-full bg-black hover:bg-gray-800 text-white py-3">
+                <Button 
+                  onClick={() => {
+                    navigate('/checkout');
+                    onClose();
+                  }}
+                  className="w-full bg-black hover:bg-gray-800 text-white py-3"
+                >
                   Checkout
                 </Button>
               </div>

@@ -90,9 +90,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           }`}
         />
         
-        {/* Hover image - overlay */}
+        {/* Hover image - overlay - use second image if available */}
         <img
-          src={getTeaImage(product.name)}
+          src={product.images?.[1] || getTeaImage(product.name)}
           alt={`${product.name} prepared tea`}
           className={`absolute inset-0 aspect-[1.06] object-cover w-full transition-opacity duration-[1500ms] ease-in-out ${
             isHovered ? 'opacity-100' : 'opacity-0'

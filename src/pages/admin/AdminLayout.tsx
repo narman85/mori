@@ -6,8 +6,6 @@ import {
   LayoutDashboard, 
   Package, 
   ShoppingCart, 
-  Users, 
-  Settings,
   LogOut,
   Menu,
   X
@@ -19,7 +17,6 @@ const AdminLayout = () => {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  console.log('AdminLayout Debug:', { user, loading }); // Debug log
 
   // Show loading while auth is checking
   if (loading) {
@@ -73,18 +70,6 @@ const AdminLayout = () => {
       href: '/admin/orders',
       icon: ShoppingCart,
       current: location.pathname === '/admin/orders'
-    },
-    {
-      name: 'Users',
-      href: '/admin/users',
-      icon: Users,
-      current: location.pathname === '/admin/users'
-    },
-    {
-      name: 'Settings',
-      href: '/admin/settings',
-      icon: Settings,
-      current: location.pathname === '/admin/settings'
     }
   ];
 

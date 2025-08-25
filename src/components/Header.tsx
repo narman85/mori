@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
+import { useAuth } from '@/hooks/useAuth';
 import { CartSidebar } from './CartSidebar';
 import { SearchPopup } from './SearchPopup';
 
@@ -16,6 +17,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const { getTotalItems } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -117,7 +119,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           
           {/* User Account - Show on tablet+ */}
           <button 
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate(user ? '/account' : '/auth')}
             className="hidden md:block aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity"
           >
             <img
@@ -200,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               {/* Account */}
               <button 
                 onClick={() => {
-                  navigate('/auth');
+                  navigate(user ? '/account' : '/auth');
                   setIsMobileMenuOpen(false);
                 }}
                 className="flex items-center gap-3 p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors text-left"
@@ -210,7 +212,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                   alt="User account"
                   className="w-5 h-5"
                 />
-                <span>Account</span>
+                <span>{user ? 'My Account' : 'Sign In'}</span>
               </button>
 
               {/* About */}

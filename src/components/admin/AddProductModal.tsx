@@ -53,7 +53,29 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      setImageFiles(prev => [...prev, ...files].slice(0, 5)); // Max 5 images
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const validFiles: File[] = [];
+      const invalidFiles: string[] = [];
+
+      files.forEach(file => {
+        if (file.size > maxSize) {
+          invalidFiles.push(`${file.name} (${Math.round(file.size / 1024 / 1024 * 100) / 100}MB)`);
+        } else {
+          validFiles.push(file);
+        }
+      });
+
+      if (invalidFiles.length > 0) {
+        toast({
+          title: "File Size Warning",
+          description: `Some files are too large (max 10MB): ${invalidFiles.join(', ')}`,
+          variant: "destructive",
+        });
+      }
+
+      if (validFiles.length > 0) {
+        setImageFiles(prev => [...prev, ...validFiles].slice(0, 5)); // Max 5 images
+      }
     }
   };
 
@@ -94,44 +116,57 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
       return;
     }
 
+    // Check if user is authenticated
+    if (!pb.authStore.isValid) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to add products",
+        variant: "destructive",
+      });
+      return;
+    }
+
+
     setLoading(true);
 
     try {
-      // First try with JSON data to see exact error
-      const jsonData = {
-        name: formData.name,
-        description: formData.description || '',
-        price: parseFloat(formData.price),
-        category: formData.category || '',
-        in_stock: formData.in_stock,
-        featured: formData.featured,
-      };
-
-      console.log('Sending data:', jsonData); // Debug log
-
       let record;
 
+      // If we have images, use FormData for everything
       if (imageFiles.length > 0) {
-        // Use FormData if there are images
         const data = new FormData();
+        
+        // Add all fields to FormData
         data.append('name', formData.name);
         data.append('description', formData.description || '');
         data.append('price', formData.price);
         data.append('category', formData.category || '');
         data.append('in_stock', formData.in_stock.toString());
         data.append('featured', formData.featured.toString());
-
-        // Add images
+        
+        // Add images - each file separately
         imageFiles.forEach((file) => {
           data.append('image', file);
         });
 
+        
         record = await pb.collection('products').create(data);
+        
       } else {
-        // Use JSON data if no images
-        record = await pb.collection('products').create(jsonData);
+        // No images - use simple JSON object
+        const productData = {
+          name: formData.name,
+          description: formData.description || '',
+          price: parseFloat(formData.price),
+          category: formData.category || '',
+          in_stock: formData.in_stock,
+          featured: formData.featured,
+        };
+
+        record = await pb.collection('products').create(productData);
       }
 
+      
       toast({
         title: "Success!",
         description: "Product added successfully",
@@ -142,10 +177,9 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
       onProductAdded();
 
     } catch (error: any) {
-      console.error('Error creating product:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create product",
+        description: error.response?.data?.message || error.message || "Failed to create product",
         variant: "destructive",
       });
     } finally {
@@ -222,7 +256,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
 
           {/* Images */}
           <div className="space-y-2">
-            <Label htmlFor="images">Product Images (Max 5)</Label>
+            <Label htmlFor="images">Product Images (Max 5, 10MB each)</Label>
+            <p className="text-sm text-gray-500">First image is main, second is hover image. Supported formats: JPG, PNG, WebP, GIF</p>
             <div className="space-y-2">
               <Input
                 id="images"
