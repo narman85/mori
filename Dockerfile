@@ -5,16 +5,18 @@ FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     curl \
+    wget \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /app
 
-# Copy PocketBase binary
-COPY pocketbase.exe pocketbase
-
-# Make it executable
-RUN chmod +x pocketbase
+# Download PocketBase for Linux
+RUN wget https://github.com/pocketbase/pocketbase/releases/download/v0.23.4/pocketbase_0.23.4_linux_amd64.zip \
+    && unzip pocketbase_0.23.4_linux_amd64.zip \
+    && chmod +x pocketbase \
+    && rm pocketbase_0.23.4_linux_amd64.zip
 
 # Copy database and migrations if they exist
 COPY pb_data ./pb_data
