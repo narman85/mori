@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { StripeProvider } from "@/context/StripeContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import About from "./pages/About";
 import ProductDetail from "./pages/ProductDetail";
 import { Checkout } from "./pages/Checkout";
 import { OrderConfirmation } from "./pages/OrderConfirmation";
@@ -19,6 +20,7 @@ import AddProduct from "./pages/admin/AddProduct";
 import EditProduct from "./pages/admin/EditProduct";
 import OrdersManagement from "./pages/admin/OrdersManagement";
 import UsersManagement from "./pages/admin/UsersManagement";
+import UserDetail from "./pages/admin/UserDetail";
 import UserLayout from "./pages/user/UserLayout";
 import Profile from "./pages/user/Profile";
 import UserOrders from "./pages/user/UserOrders";
@@ -39,6 +41,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/about" element={<About />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
@@ -51,6 +54,7 @@ const App = () => (
                 <Route path="products/edit/:id" element={<EditProduct />} />
                 <Route path="orders" element={<OrdersManagement />} />
                 <Route path="users" element={<UsersManagement />} />
+                <Route path="users/:id" element={<UserDetail />} />
               </Route>
               
               {/* User Account Routes */}

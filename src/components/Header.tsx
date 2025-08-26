@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
 import { CartSidebar } from './CartSidebar';
@@ -40,7 +40,9 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
     };
   }, []);
 
-  const navigationItems: { label: string; href: string }[] = [];
+  const navigationItems: { label: string; href: string }[] = [
+    { label: 'About', href: '/about' }
+  ];
 
   return (
     <>
@@ -54,28 +56,11 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           />
         </button>
         
-        {/* Desktop Navigation */}
-        <nav className="hidden xl:flex items-center gap-6 text-black text-center">
-          {navigationItems.map((item, index) => (
-            <a
-              key={index}
-              href={item.href}
-              className="flex items-center gap-2.5 justify-center px-3 py-1.5 hover:bg-gray-50 transition-colors whitespace-nowrap"
-            >
-              <span>{item.label}</span>
-            </a>
-          ))}
-        </nav>
+        {/* Desktop Navigation - Hidden */}
+        <div className="hidden"></div>
 
         {/* Right Side - Icons */}
         <div className="flex items-center gap-2 md:gap-3 text-[rgba(76,76,76,1)]">
-          {/* About Link - Show on desktop */}
-          <a
-            href="#about"
-            className="hidden xl:flex items-center gap-2.5 justify-center px-3 py-1.5 hover:bg-gray-50 transition-colors whitespace-nowrap text-black text-center"
-          >
-            <span>About</span>
-          </a>
           
           {/* Language Dropdown - Show on tablet+ */}
           <div ref={dropdownRef} className="hidden md:relative md:flex items-center">
@@ -104,6 +89,14 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               </div>
             )}
           </div>
+          
+          {/* About Button - Show on tablet+ */}
+          <Link
+            to="/about"
+            className="hidden md:block px-3 py-1.5 text-xs md:text-sm text-[rgba(76,76,76,1)] hover:bg-gray-50 transition-colors rounded whitespace-nowrap"
+          >
+            About
+          </Link>
           
           {/* Search Icon - Show on tablet+ */}
           <button 
@@ -215,14 +208,17 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
                 <span>{user ? 'My Account' : 'Sign In'}</span>
               </button>
 
-              {/* About */}
-              <a
-                href="#about"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                About
-              </a>
+              {/* Navigation Items */}
+              {navigationItems.map((item, index) => (
+                <Link
+                  key={index}
+                  to={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
 
               {/* Language Selection */}
               <div className="relative">
