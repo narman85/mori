@@ -23,12 +23,18 @@ dist-ssr
 *.sln
 *.sw?
 
-# PocketBase files
-pocketbase.exe
+# PocketBase files (keep for deployment)
 pocketbase.zip
-pb_data/
-pb_migrations/
 setup-pocketbase.js
+
+# PocketBase development files (ignore)
+pb_data/logs/
+pb_data/backups/
+
+# Keep these for deployment:
+# pocketbase.exe - needed for Railway
+# pb_data/ - needed for database
+# pb_migrations/ - needed for schema
 
 # Claude files
 .claude/

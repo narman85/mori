@@ -1,0 +1,22 @@
+services:
+  # PocketBase Backend
+  - type: web
+    name: tea-store-backend
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 8090
+      - key: PB_ENCRYPTION_KEY
+        generateValue: true
+    healthCheckPath: /api/health
+    disk:
+      name: pb-data
+      mountPath: /app/pb_data
+      sizeGB: 1
+
+# Optional: PostgreSQL Database (if needed later)
+# databases:
+#   - name: tea-store-db
+#     plan: free

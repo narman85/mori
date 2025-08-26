@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 interface DashboardStats {
   totalProducts: number;
   totalOrders: number;
+  totalSales: number;
   totalUsers: number;
   totalRevenue: number;
 }
@@ -27,19 +28,76 @@ interface RecentOrder {
   };
 }
 
+interface TopProduct {
+  id: string;
+  name: string;
+  totalSold: number;
+  image?: string[];
+  price: number;
+}
+
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
     totalOrders: 0,
+    totalSales: 0,
     totalUsers: 0,
     totalRevenue: 0
   });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  const getTopSellingProducts = async (): Promise<TopProduct[]> => {
+    try {
+      // Get all order items with product and order info
+      const orderItems = await pb.collection('order_items').getFullList({
+        expand: 'product,order'
+      });
+
+      // Filter successful orders and group by product
+      const productSales: { [key: string]: { product: any; totalSold: number } } = {};
+      
+      orderItems.forEach(item => {
+        if (item.expand?.order && 
+            (item.expand.order.status === 'paid' || item.expand.order.status === 'completed') &&
+            item.expand?.product) {
+          const productId = item.expand.product.id;
+          const quantity = item.quantity || 0;
+          
+          if (productSales[productId]) {
+            productSales[productId].totalSold += quantity;
+          } else {
+            productSales[productId] = {
+              product: item.expand.product,
+              totalSold: quantity
+            };
+          }
+        }
+      });
+
+      // Convert to array and sort by total sold
+      const topProducts = Object.values(productSales)
+        .map(item => ({
+          id: item.product.id,
+          name: item.product.name,
+          totalSold: item.totalSold,
+          image: item.product.image,
+          price: item.product.price || item.product.sale_price || 0
+        }))
+        .sort((a, b) => b.totalSold - a.totalSold)
+        .slice(0, 5); // Top 5 products
+
+      return topProducts;
+    } catch (error) {
+      console.error('Error getting top selling products:', error);
+      return [];
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -73,24 +131,45 @@ const Dashboard = () => {
         return sum + (order.total_price || 0);
       }, 0);
 
+      // Calculate total products sold (sum of all quantities from order items)
+      let totalProductsSold = 0;
+      try {
+        // Get all order items for paid and completed orders
+        const orderItems = await pb.collection('order_items').getFullList({
+          expand: 'order'
+        });
+        
+        // Filter order items for successful orders and sum quantities
+        totalProductsSold = orderItems.reduce((total, item) => {
+          // Check if the order is paid or completed
+          if (item.expand?.order && 
+              (item.expand.order.status === 'paid' || item.expand.order.status === 'completed')) {
+            return total + (item.quantity || 0);
+          }
+          return total;
+        }, 0);
+        
+        console.log('Total products sold:', totalProductsSold);
+      } catch (error) {
+        console.error('Error calculating total products sold:', error);
+      }
+
       // Get recent orders (last 10)
       const recentOrdersList = orders.slice(0, 10);
 
       setStats({
         totalProducts: products.length,
         totalOrders: orders.length,
+        totalSales: totalProductsSold,
         totalUsers: users.length,
         totalRevenue: totalRevenue
       });
 
       setRecentOrders(recentOrdersList);
       
-      // Get low stock products (stock <= 5 and stock > 0)
-      const lowStockProducts = products.filter(p => 
-        p.stock !== undefined && p.stock > 0 && p.stock <= 5
-      );
-      
-      console.log('Low stock products:', lowStockProducts);
+      // Get top selling products
+      const topSellingProducts = await getTopSellingProducts();
+      setTopProducts(topSellingProducts);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -132,7 +211,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Products</CardTitle>
@@ -152,6 +231,17 @@ const Dashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">{loading ? '...' : stats.totalOrders}</div>
             <p className="text-xs text-muted-foreground">Orders placed</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? '...' : stats.totalSales}</div>
+            <p className="text-xs text-muted-foreground">Products sold</p>
           </CardContent>
         </Card>
 
@@ -225,13 +315,35 @@ const Dashboard = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Low Stock Products</CardTitle>
-            <CardDescription>Products running low on inventory</CardDescription>
+            <CardTitle>Top Selling Products</CardTitle>
+            <CardDescription>Best performing products by sales</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-6 text-gray-500">
-              No products with low stock
-            </div>
+            {loading ? (
+              <div className="text-center py-6 text-gray-500">Loading products...</div>
+            ) : topProducts.length === 0 ? (
+              <div className="text-center py-6 text-gray-500">No sales data yet</div>
+            ) : (
+              <div className="space-y-4">
+                {topProducts.map((product, index) => (
+                  <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">
+                        #{index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{product.name}</p>
+                        <p className="text-sm text-gray-500">{formatCurrency(product.price)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-green-600">{product.totalSold} sold</p>
+                      <p className="text-sm text-gray-500">units</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
