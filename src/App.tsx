@@ -26,6 +26,7 @@ import Profile from "./pages/user/Profile";
 import UserOrders from "./pages/user/UserOrders";
 import UserSettings from "./pages/user/UserSettings";
 import UserDashboard from "./pages/user/Dashboard";
+import OAuthCallback from "./pages/OAuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/oauth-callback" element={<OAuthCallback />} />
               <Route path="/about" element={<About />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout />} />

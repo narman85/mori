@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { pb } from '@/integrations/supabase/client';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { StripePaymentForm } from '@/components/StripePaymentForm';
-import { createStripePaymentIntent } from '@/utils/stripe-api';
+import { createMockPaymentIntent, createStripePaymentIntent } from '@/utils/stripe-api';
 
 interface ShippingInfo {
   firstName: string;
@@ -66,13 +66,21 @@ export const Checkout: React.FC = () => {
   const proceedToPayment = async () => {
     try {
       setLoading(true);
+      // Clear any existing client secret to avoid reuse
+      setClientSecret('');
+      
       const total = getTotalPrice() + (getTotalPrice() > 50 ? 0 : 5);
+      console.log('Creating payment intent for total:', total);
+      
+      // Use real Stripe API
       const paymentIntent = await createStripePaymentIntent(total);
+      console.log('Payment intent created:', paymentIntent.id);
+      
       setClientSecret(paymentIntent.client_secret);
       setCurrentStep('payment');
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      toast.error('Failed to initialize payment');
+      toast.error('Failed to initialize payment: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -97,11 +105,6 @@ export const Checkout: React.FC = () => {
   };
 
   const handlePaymentSuccess = async () => {
-    if (!user) {
-      toast.error('Please log in to place an order');
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -111,40 +114,124 @@ export const Checkout: React.FC = () => {
       const total = subtotal + shipping;
 
       const orderData = {
-        user: user.id,
+        ...(user?.id ? { user: user.id } : {}), // Only include user field if user exists
         total_price: total,
         status: 'paid', // Mark as paid since payment succeeded
-        shipping_address: shippingInfo
+        shipping_address: shippingInfo,
+        // For guest users, add guest information
+        ...((!user) && {
+          guest_email: shippingInfo.email,
+          guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+          guest_phone: shippingInfo.phone
+        })
       };
 
-      const order = await pb.collection('orders').create(orderData);
-
+      console.log('Creating order with data:', orderData);
+      
+      // For guest users, we need to use the public API endpoint or create with proper permissions
+      let order;
+      if (!user) {
+        // Guest order - create without authentication using public API
+        try {
+          const response = await fetch('http://127.0.0.1:8090/api/collections/orders/records', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderData)
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Guest order creation failed: ${errorData.message || response.statusText}`);
+          }
+          
+          order = await response.json();
+          console.log('Guest order created successfully:', order.id);
+        } catch (guestOrderError) {
+          console.error('Guest order creation failed:', guestOrderError);
+          throw new Error('Unable to create guest order. Please try logging in or contact support.');
+        }
+      } else {
+        // Authenticated user order - use normal PocketBase client
+        order = await pb.collection('orders').create(orderData);
+        console.log('User order created successfully:', order.id);
+      }
+      
       // Create order items
-      const orderItemPromises = cart.map(item => 
-        pb.collection('order_items').create({
+      const orderItemPromises = cart.map(async (item) => {
+        const effectivePrice = (item.sale_price && item.sale_price > 0 && item.sale_price < item.price) 
+          ? item.sale_price 
+          : item.price;
+        
+        const orderItemData = {
           order: order.id,
           product: item.id,
           quantity: item.quantity,
-          price: item.price
-        })
-      );
+          price: effectivePrice
+        };
+
+        if (!user) {
+          // Guest order item - use public API
+          const response = await fetch('http://127.0.0.1:8090/api/collections/order_items/records', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderItemData)
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to create order item for ${item.name}`);
+          }
+          
+          return await response.json();
+        } else {
+          // Authenticated user - use PocketBase client
+          return pb.collection('order_items').create(orderItemData);
+        }
+      });
 
       await Promise.all(orderItemPromises);
 
       // Update stock quantities for each product
       const stockUpdatePromises = cart.map(async (item) => {
         try {
-          // Get current product data to get current stock
-          const currentProduct = await pb.collection('products').getOne(item.id);
-          const newStock = Math.max(0, (currentProduct.stock || 0) - item.quantity);
-          
-          // Update product stock (but keep product active)
-          await pb.collection('products').update(item.id, {
-            stock: newStock
-            // Don't change in_stock - keep product visible even if stock is 0
-          });
-          
-          console.log(`Updated ${item.name} stock: ${currentProduct.stock || 0} -> ${newStock}`);
+          if (!user) {
+            // Guest order - update stock via public API
+            const productResponse = await fetch(`http://127.0.0.1:8090/api/collections/products/records/${item.id}`);
+            if (!productResponse.ok) {
+              throw new Error(`Failed to fetch product ${item.id}`);
+            }
+            const currentProduct = await productResponse.json();
+            const newStock = Math.max(0, (currentProduct.stock || 0) - item.quantity);
+            
+            const updateResponse = await fetch(`http://127.0.0.1:8090/api/collections/products/records/${item.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                stock: newStock
+              })
+            });
+            
+            if (!updateResponse.ok) {
+              throw new Error(`Failed to update stock for ${item.name}`);
+            }
+            
+            console.log(`Updated ${item.name} stock: ${currentProduct.stock || 0} -> ${newStock}`);
+          } else {
+            // Authenticated user - use PocketBase client
+            const currentProduct = await pb.collection('products').getOne(item.id);
+            const newStock = Math.max(0, (currentProduct.stock || 0) - item.quantity);
+            
+            await pb.collection('products').update(item.id, {
+              stock: newStock
+            });
+            
+            console.log(`Updated ${item.name} stock: ${currentProduct.stock || 0} -> ${newStock}`);
+          }
         } catch (error) {
           console.error(`Failed to update stock for ${item.name}:`, error);
         }
@@ -159,7 +246,18 @@ export const Checkout: React.FC = () => {
 
     } catch (error) {
       console.error('Order error:', error);
-      toast.error('Failed to create order after payment. Please contact support.');
+      if (error.data) {
+        console.error('Full error data:', JSON.stringify(error.data, null, 2));
+        console.error('Error message:', error.message);
+        
+        // Show specific field errors if available
+        if (error.data.data) {
+          Object.keys(error.data.data).forEach(field => {
+            console.error(`Field ${field}:`, error.data.data[field]);
+          });
+        }
+      }
+      toast.error('Failed to create order: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -258,6 +356,7 @@ export const Checkout: React.FC = () => {
                       type="email"
                       value={shippingInfo.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder={user ? user.email : "Enter your email address"}
                       required
                     />
                   </div>

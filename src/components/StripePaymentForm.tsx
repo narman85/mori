@@ -20,10 +20,11 @@ interface StripePaymentFormProps {
 
 // Internal payment form component
 const PaymentForm: React.FC<{
+  clientSecret: string;
   amount: number;
   onSuccess: () => void;
   onError: (error: string) => void;
-}> = ({ amount, onSuccess, onError }) => {
+}> = ({ clientSecret, amount, onSuccess, onError }) => {
   const stripe = useStripe();
   const elements = useElements();
   const [processing, setProcessing] = useState(false);
@@ -82,7 +83,7 @@ const PaymentForm: React.FC<{
           <div className="pt-4">
             <Button 
               type="submit" 
-              disabled={!stripe || processing}
+              disabled={processing || !stripe || !elements}
               className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
             >
               {processing ? (
@@ -133,6 +134,7 @@ export const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   return (
     <Elements stripe={stripePromise} options={options}>
       <PaymentForm
+        clientSecret={clientSecret}
         amount={amount}
         onSuccess={onSuccess}
         onError={onError}

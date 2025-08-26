@@ -1,7 +1,9 @@
-// Real Stripe API integration via backend
+// Real Stripe API integration  
 const API_BASE = 'http://localhost:3001/api';
+const STRIPE_API_BASE = 'https://api.stripe.com/v1';
 
 interface PaymentIntentResponse {
+  id?: string;
   client_secret: string;
   amount: number;
   currency: string;
@@ -50,10 +52,15 @@ export async function createMockPaymentIntent(
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  // Mock client secret
-  const mockClientSecret = `pi_mock_${Date.now()}_secret_${Math.random().toString(36).substring(7)}`;
+  // Mock client secret and id with proper Stripe format but identifiable
+  const timestamp = Date.now().toString().slice(-8);
+  const randomId = Math.random().toString(36).substring(2, 8);
+  const mockId = `pi_mock${timestamp}${randomId}`;
+  const mockSecret = Math.random().toString(36).substring(2, 22);
+  const mockClientSecret = `${mockId}_secret_${mockSecret}`;
   
   return {
+    id: mockId,
     client_secret: mockClientSecret,
     amount: Math.round(amount * 100),
     currency: currency,

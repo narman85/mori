@@ -35,8 +35,11 @@ const AdminLayout = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if user is admin - for now, anyone logged in is admin
-  const isAdmin = user && user.email; // Temporary: any logged in user is admin
+  // Check if user is admin - only specific admin users should have access
+  const isAdmin = user && (
+    user.role === 'admin' || 
+    user.email === 'babayev1994@gmail.com' // Your admin email
+  );
 
   if (!isAdmin) {
     return (

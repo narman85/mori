@@ -12,7 +12,8 @@ import {
   UserCheck,
   UserX,
   ShoppingCart,
-  Package
+  Package,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -77,6 +78,22 @@ const UsersManagement = () => {
     fetchUsers();
   }, []);
 
+  // Auto refresh when window comes back into focus
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('🔄 Window focused, refreshing users...');
+      setUsers([]);
+      setFilteredUsers([]);
+      setLoading(true);
+      fetchUsers();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   useEffect(() => {
     // Filter users based on search term
     if (searchTerm.trim() === '') {
@@ -101,6 +118,15 @@ const UsersManagement = () => {
       });
       
       console.log('✅ Users fetched:', records.length);
+      records.forEach((user, index) => {
+        console.log(`User ${index + 1}:`, {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          verified: user.verified
+        });
+      });
 
       // Fetch orders for each user to get order count and total spent
       console.log('🔄 Fetching orders for each user...');
@@ -157,6 +183,7 @@ const UsersManagement = () => {
     }
   };
 
+
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
       return;
@@ -205,6 +232,19 @@ const UsersManagement = () => {
           <h1 className="text-2xl font-bold text-gray-900">Users Management</h1>
           <p className="text-gray-600">Manage registered users and view their information</p>
         </div>
+        <Button 
+          onClick={() => {
+            setUsers([]);
+            setFilteredUsers([]);
+            setLoading(true);
+            fetchUsers();
+          }}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Refresh
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -255,7 +295,7 @@ const UsersManagement = () => {
       </div>
 
       {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border">
         <div className="px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-gray-900">
             Users ({filteredUsers.length})
@@ -274,25 +314,25 @@ const UsersManagement = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
                     User
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-60">
                     Email
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                     Orders
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
                     Total Spent
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                     Created
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
                     Actions
                   </th>
                 </tr>
@@ -300,7 +340,7 @@ const UsersManagement = () => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0">
                           <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
@@ -309,23 +349,25 @@ const UsersManagement = () => {
                             </span>
                           </div>
                         </div>
-                        <div className="ml-4">
+                        <div className="ml-3">
                           <div className="text-sm font-medium text-gray-900">
                             {user.name || user.username || 'No name'}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-xs text-gray-500">
                             @{user.username}
                           </div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                        <span className="text-sm text-gray-900">{user.email}</span>
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900">
+                        {user.email || 'No email'}
+                        {!user.email && (
+                          <span className="text-xs text-red-500 ml-1">(missing)</span>
+                        )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         user.verified 
                           ? 'bg-green-100 text-green-800' 
@@ -344,21 +386,21 @@ const UsersManagement = () => {
                         )}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="flex items-center">
                         <ShoppingCart className="h-4 w-4 text-gray-400 mr-1" />
-                        {user.totalOrders || 0} orders
+                        {user.totalOrders || 0}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
                       <div className="font-medium">
                         €{(user.totalSpent || 0).toFixed(2)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(user.created)}
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="text-xs">{formatDate(user.created)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         <Button
                           variant="outline"
