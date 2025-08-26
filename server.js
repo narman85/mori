@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import Stripe from 'stripe';
 
-const stripe = new Stripe('sk_test_51RzFuKJAxTpcAzNAuYZZNnxiC9gUtRlPLwYzgIeHIEVZIz7LqOIWyCARWwJdPW9RnuIYtehRN23DknHZjgMRopwS007SQMcFsb');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_your_stripe_secret_key_here');
 
 const app = express();
 const port = 3001;

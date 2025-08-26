@@ -9,7 +9,7 @@ const app = express();
 const port = 3001;
 
 // Initialize Stripe with your secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_51RzFuKJAxTpcAzNAuYZZNnxiC9gUtRlPLwYzgIeHIEVZIz7LqOIWyCARWwJdPW9RnuIYtehRN23DknHZjgMRopwS007SQMcFsb');
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_your_stripe_secret_key_here');
 
 // Middleware
 app.use(cors({
