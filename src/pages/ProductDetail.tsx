@@ -14,13 +14,17 @@ interface DetailProduct {
   id: string;
   name: string;
   description: string;
+  short_description?: string;
   price: number;
+  sale_price?: number;
   image?: string[];
+  hover_image?: string;
   weight?: string;
   category?: string;
   stock?: number;
   created: string;
   updated: string;
+  hidden?: boolean;
   preparation?: {
     amount: string;
     temperature: string;
@@ -57,10 +61,21 @@ const ProductDetail = () => {
           }
         }
         
-        setProduct(record);
+        // Handle sale_price: convert 0 to undefined
+        if (record.sale_price === 0) {
+          record.sale_price = undefined;
+        }
+        
+        // Check if product is hidden - if so, treat as not found
+        if (record.hidden) {
+          setProduct(null);
+        } else {
+          setProduct(record);
+        }
       } catch (error) {
         console.error('Error fetching product:', error);
         toast.error('Failed to load product');
+        setProduct(null);
       } finally {
         setLoading(false);
       }
@@ -97,30 +112,90 @@ const ProductDetail = () => {
     );
   }
 
+  // Format weight with 'g' if it's just a number
+  const formatWeight = (weight: string) => {
+    if (!weight) return '';
+    
+    // Check if it's just a number (no letters)
+    const isOnlyNumber = /^\d+$/.test(weight.trim());
+    
+    if (isOnlyNumber) {
+      return `${weight}g`;
+    }
+    
+    return weight;
+  };
+
+  // Debug discount logic
+  const hasDiscount = product.sale_price && product.sale_price > 0 && product.sale_price < product.price;
+  if (product.sale_price !== undefined) {
+    console.log(`Product "${product.name}" discount debug:`, {
+      price: product.price,
+      sale_price: product.sale_price,
+      hasDiscount: hasDiscount
+    });
+  }
+
   const handleAddToCart = () => {
+    // Check stock availability
+    if (product.stock !== undefined && product.stock !== null) {
+      const currentInCart = getItemQuantity(product.id);
+      if (product.stock <= 0) {
+        toast.error("Out of Stock", {
+          description: "This product is currently out of stock",
+          position: "bottom-left"
+        });
+        return;
+      }
+      if (currentInCart >= product.stock) {
+        toast.error("Stock Limit Reached", {
+          description: `Only ${product.stock} items available in stock`,
+          position: "bottom-left"
+        });
+        return;
+      }
+    }
+
     // Convert DetailProduct to Product format for cart
     const cartProduct = {
       id: product.id,
       name: product.name,
       description: product.description,
       price: product.price,
+      sale_price: product.sale_price, // Include sale_price for cart discount
       weight: product.weight || '',
+      stock: product.stock,
       images: product.image?.map(img => pb.files.getURL(product, img)) || []
     };
     
     console.log('Adding to cart:', cartProduct);
     addToCart(cartProduct);
+    
+    // Automatically open cart sidebar after adding item
+    setTimeout(() => {
+      setIsCartOpen(true);
+    }, 600); // Small delay to show the toast first
+    
     toast.success(`${product.name} added`, {
-      description: "Click to open cart",
-      duration: 3000,
-      action: {
-        label: "Open cart",
-        onClick: () => setIsCartOpen(true)
-      }
+      description: "Opening cart...",
+      duration: 2000,
+      position: "bottom-left"
     });
   };
 
   const handleIncrement = () => {
+    // Check stock limit before incrementing
+    if (product.stock !== undefined && product.stock !== null) {
+      const currentInCart = getItemQuantity(product.id);
+      if (currentInCart >= product.stock) {
+        toast.error("Stock Limit Reached", {
+          description: `Only ${product.stock} items available in stock`,
+          position: "bottom-left"
+        });
+        return;
+      }
+    }
+
     // Convert DetailProduct to Product format for cart
     const cartProduct = {
       id: product.id,
@@ -128,11 +203,15 @@ const ProductDetail = () => {
       description: product.description,
       price: product.price,
       weight: product.weight || '',
+      stock: product.stock,
       images: product.image?.map(img => pb.files.getURL(product, img)) || []
     };
     
     addToCart(cartProduct);
-    toast.success(`${product.name} quantity increased`);
+    toast.success(`${product.name} quantity increased`, {
+      position: "bottom-left",
+      duration: 2000
+    });
   };
 
   const handleDecrement = () => {
@@ -142,7 +221,10 @@ const ProductDetail = () => {
     } else {
       removeFromCart(product.id);
     }
-    toast.success(`${product.name} quantity decreased`);
+    toast.success(`${product.name} quantity decreased`, {
+      position: "bottom-left",
+      duration: 2000
+    });
   };
 
   // Get product images with proper URLs
@@ -175,7 +257,6 @@ const ProductDetail = () => {
                   <ProductImageGallery 
                     images={productImages} 
                     productName={product.name}
-                    excludeHoverImage={true}
                   />
                 ) : (
                   <div className="aspect-square bg-gray-100 flex items-center justify-center rounded-lg">
@@ -194,7 +275,6 @@ const ProductDetail = () => {
 
               {/* Product description */}
               <div className="space-y-4">
-                <h2 className="text-lg font-medium text-black">About this product</h2>
                 <p className="text-[rgba(80,80,80,1)] leading-relaxed text-sm lg:text-base">
                   {product.description}
                 </p>
@@ -202,41 +282,43 @@ const ProductDetail = () => {
 
               {/* Product Details */}
               <div className="flex flex-col gap-4">
-                {/* Category */}
-                {product.category && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-black font-medium">Category:</span>
-                    <span className="text-[rgba(173,29,24,1)] font-medium capitalize">{product.category}</span>
-                  </div>
-                )}
-
-                {/* Weight */}
-                {product.weight && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-black font-medium">Weight:</span>
-                    <span className="text-[rgba(173,29,24,1)] font-medium">{product.weight}</span>
-                  </div>
-                )}
-
-                {/* Stock */}
-                {product.stock !== undefined && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-black font-medium">In Stock:</span>
-                    <span className={`font-medium ${
-                      product.stock > 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {product.stock > 0 ? `${product.stock} available` : 'Out of stock'}
-                    </span>
-                  </div>
-                )}
-
-                {/* Price */}
+                {/* Weight and Price on same line */}
                 <div className="flex items-center justify-between">
-                  <span className="text-black font-medium">Price:</span>
-                  <span className="text-xl lg:text-2xl font-medium text-black">
-                    €{product.price.toFixed(2)}
-                  </span>
+                  {/* Weight */}
+                  {product.category && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-black font-medium">Weight:</span>
+                      <span className="text-[rgba(173,29,24,1)] font-medium">{formatWeight(product.category)}</span>
+                    </div>
+                  )}
+                  
+                  {/* Price */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-black font-medium">Price:</span>
+                    <div className="flex items-center gap-3">
+                      {/* Show original price with red strikethrough if there's a discount */}
+                      {product.sale_price && product.sale_price > 0 && product.sale_price < product.price && (
+                        <span 
+                          className="text-xl lg:text-2xl font-medium text-black relative"
+                          style={{
+                            textDecoration: 'line-through',
+                            textDecorationColor: 'red',
+                            textDecorationThickness: '2px'
+                          }}
+                        >
+                          €{product.price.toFixed(2)}
+                        </span>
+                      )}
+                      {/* Show sale price if discount exists, otherwise show regular price */}
+                      <span className="text-xl lg:text-2xl font-medium text-black">
+                        €{(product.sale_price && product.sale_price > 0 && product.sale_price < product.price) 
+                          ? product.sale_price.toFixed(2) 
+                          : product.price.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
               </div>
 
               {/* Buy button */}
@@ -286,19 +368,6 @@ const ProductDetail = () => {
             />
           )}
 
-          {/* Additional Product Info */}
-          <div className="mt-12 pt-8 border-t border-gray-200">
-            <div className="grid gap-6 md:grid-cols-2">
-              <div>
-                <h3 className="text-lg font-medium text-black mb-3">Product Information</h3>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <p><span className="font-medium">Product ID:</span> {product.id}</p>
-                  <p><span className="font-medium">Added:</span> {new Date(product.created).toLocaleDateString()}</p>
-                  <p><span className="font-medium">Last Updated:</span> {new Date(product.updated).toLocaleDateString()}</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
 

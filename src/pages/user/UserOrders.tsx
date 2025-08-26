@@ -86,6 +86,52 @@ const UserOrders = () => {
 
   useEffect(() => {
     fetchOrders();
+
+    // Subscribe to real-time order changes for this user
+    if (user) {
+      const unsubscribe = pb.collection('orders').subscribe('*', function (e) {
+        console.log('Real-time order update for user:', e.action, e.record);
+        
+        // Only process changes for current user's orders
+        if (e.record && e.record.user === user.id) {
+          if (e.action === 'update') {
+            setOrders(prevOrders =>
+              prevOrders.map(order =>
+                order.id === e.record.id
+                  ? { ...order, status: e.record.status, updated: e.record.updated }
+                  : order
+              )
+            );
+            
+            // Show toast notification for status changes
+            const statusConfig = getStatusConfig(e.record.status);
+            const statusText = e.record.status.charAt(0).toUpperCase() + e.record.status.slice(1);
+            
+            toast.success(`Order Status Updated`, {
+              description: `Order #${e.record.id.slice(-8).toUpperCase()} is now ${statusText}`,
+              duration: 5000,
+              position: "top-right"
+            });
+          } else if (e.action === 'create') {
+            // Fetch the new order with expanded relations
+            pb.collection('orders').getOne(e.record.id, {
+              expand: 'order_items(order).product'
+            }).then(newOrder => {
+              setOrders(prevOrders => [newOrder, ...prevOrders]);
+              toast.success('New Order Created', {
+                description: `Order #${e.record.id.slice(-8).toUpperCase()} has been created`,
+                duration: 5000,
+                position: "top-right"
+              });
+            }).catch(err => console.error('Failed to fetch new order:', err));
+          }
+        }
+      });
+
+      return () => {
+        unsubscribe?.then(unsub => unsub?.());
+      };
+    }
   }, [user]);
 
   if (loading) {

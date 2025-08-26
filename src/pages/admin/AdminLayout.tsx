@@ -6,6 +6,7 @@ import {
   LayoutDashboard, 
   Package, 
   ShoppingCart, 
+  Users,
   LogOut,
   Menu,
   X
@@ -70,6 +71,12 @@ const AdminLayout = () => {
       href: '/admin/orders',
       icon: ShoppingCart,
       current: location.pathname === '/admin/orders'
+    },
+    {
+      name: 'Users',
+      href: '/admin/users',
+      icon: Users,
+      current: location.pathname === '/admin/users'
     }
   ];
 

@@ -14,29 +14,68 @@ interface TeaPreparationGuideProps {
 }
 
 const TeaPreparationGuide = ({ preparation, productName }: TeaPreparationGuideProps) => {
+  // Format functions for display
+  const formatAmount = (amount: string) => {
+    if (!amount) return '1g per 100ml';
+    // Add 'g per ml' if only a number is provided
+    if (!amount.includes('per') && !amount.includes('ml') && !amount.includes('cup')) {
+      return `${amount}g per 100ml`;
+    }
+    return amount;
+  };
+
+  const formatTemperature = (temp: string) => {
+    if (!temp) return '80°C';
+    // Add °C if not present
+    if (!temp.includes('°') && !temp.includes('C')) {
+      return `${temp}°C`;
+    }
+    return temp;
+  };
+
+  const formatTime = (time: string) => {
+    if (!time) return '3 minutes';
+    // Add minutes/minute if not present
+    if (!time.includes('minute') && !time.includes('min') && !time.includes('sec')) {
+      const num = parseInt(time);
+      return `${time} ${num === 1 ? 'minute' : 'minutes'}`;
+    }
+    return time;
+  };
+
+  const formatTaste = (taste: string) => {
+    if (!taste) return 'Rich & Smooth';
+    // Add & between words if space exists and no & present
+    const words = taste.split(' ');
+    if (words.length === 2 && !taste.includes('&')) {
+      return words.join(' & ');
+    }
+    return taste;
+  };
+
   const steps = [
     {
       icon: Coffee,
       title: 'How much',
-      description: preparation.amount,
+      description: formatAmount(preparation.amount),
       detail: 'Perfect ratio for optimal flavor'
     },
     {
       icon: Thermometer,
       title: 'Temperature',
-      description: preparation.temperature,
+      description: formatTemperature(preparation.temperature),
       detail: 'Ideal water temperature'
     },
     {
       icon: Timer,
       title: 'Infuse',
-      description: preparation.steepTime,
+      description: formatTime(preparation.steepTime),
       detail: 'Steeping time for best results'
     },
     {
       icon: Heart,
       title: 'Taste',
-      description: preparation.taste,
+      description: formatTaste(preparation.taste),
       detail: 'Expected flavor profile'
     }
   ];

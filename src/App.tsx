@@ -15,7 +15,10 @@ import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import ProductsManagement from "./pages/admin/ProductsManagement";
+import AddProduct from "./pages/admin/AddProduct";
+import EditProduct from "./pages/admin/EditProduct";
 import OrdersManagement from "./pages/admin/OrdersManagement";
+import UsersManagement from "./pages/admin/UsersManagement";
 import UserLayout from "./pages/user/UserLayout";
 import Profile from "./pages/user/Profile";
 import UserOrders from "./pages/user/UserOrders";
@@ -44,7 +47,10 @@ const App = () => (
               <Route path="/admin" element={<AdminLayout />}>
                 <Route index element={<Dashboard />} />
                 <Route path="products" element={<ProductsManagement />} />
+                <Route path="products/new" element={<AddProduct />} />
+                <Route path="products/edit/:id" element={<EditProduct />} />
                 <Route path="orders" element={<OrdersManagement />} />
+                <Route path="users" element={<UsersManagement />} />
               </Route>
               
               {/* User Account Routes */}

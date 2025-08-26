@@ -12,13 +12,17 @@ interface PocketBaseProduct {
   id: string;
   name: string;
   description: string;
+  short_description?: string;
   price: number;
   category: string;
   in_stock: boolean;
+  stock?: number;
   image: string[];
+  hover_image?: string;
   created: string;
   updated: string;
   display_order?: number;
+  hidden?: boolean;
 }
 
 export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
@@ -28,6 +32,83 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
 
   useEffect(() => {
     fetchProducts();
+
+    // Subscribe to real-time changes
+    const unsubscribe = pb.collection('products').subscribe('*', function (e) {
+      console.log('Real-time product update in ProductGrid:', e.action, e.record);
+      
+      // Transform the record to match our Product interface
+      const transformRecord = (record: PocketBaseProduct): Product => {
+        // Ensure stock is a proper number
+        let stock = record.stock;
+        if (stock !== undefined && stock !== null) {
+          stock = Number(stock);
+          if (isNaN(stock)) {
+            console.warn('Invalid stock value in ProductGrid real-time:', record.name, stock);
+            stock = 0;
+          }
+        }
+        
+        return {
+          id: record.id,
+          name: record.name,
+          description: record.description,
+          short_description: record.short_description,
+          price: record.price,
+          sale_price: record.sale_price === 0 ? undefined : record.sale_price,
+          stock: stock,
+          weight: record.category || '100g',
+          images: record.image && record.image.length > 0
+            ? record.image.map(img => {
+                try {
+                  return pb.files.getURL(record, img);
+                } catch (error) {
+                  console.error('Error generating image URL:', error);
+                  return 'https://via.placeholder.com/400x400?text=Error';
+                }
+              })
+            : ['https://via.placeholder.com/400x400?text=No+Image'],
+          image: record.image,
+          hover_image: record.hover_image,
+          originalPrice: undefined
+        };
+      };
+      
+      if (e.action === 'create') {
+        // Add new product if it's in stock and not hidden
+        if (e.record.in_stock && !e.record.hidden) {
+          const transformedProduct = transformRecord(e.record as PocketBaseProduct);
+          setProducts(prev => [transformedProduct, ...prev]);
+        }
+      } else if (e.action === 'update') {
+        // Update existing product
+        const transformedProduct = transformRecord(e.record as PocketBaseProduct);
+        setProducts(prev => {
+          if (e.record.in_stock && !e.record.hidden) {
+            // Product is in stock and not hidden, update or add it
+            const exists = prev.find(p => p.id === e.record.id);
+            if (exists) {
+              return prev.map(product => 
+                product.id === e.record.id ? transformedProduct : product
+              );
+            } else {
+              return [transformedProduct, ...prev];
+            }
+          } else {
+            // Product is out of stock or hidden, remove it from the grid
+            return prev.filter(product => product.id !== e.record.id);
+          }
+        });
+      } else if (e.action === 'delete') {
+        // Remove deleted product
+        setProducts(prev => prev.filter(product => product.id !== e.record.id));
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      unsubscribe?.then(unsub => unsub?.());
+    };
   }, []);
 
   const fetchProducts = async () => {
@@ -35,33 +116,128 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       setLoading(true);
       const records = await pb.collection('products').getFullList<PocketBaseProduct>({
         sort: '-display_order,-created',
-        filter: 'in_stock = true'
+        filter: 'hidden != true' // Only show products that are not hidden
       });
 
       // Transform PocketBase products to match our Product interface
-      const transformedProducts: Product[] = records.map(record => ({
-        id: record.id,
-        name: record.name,
-        description: record.description,
-        price: record.price,
-        weight: record.category || '100gr', // Use category as weight for now
-        images: record.image && record.image.length > 0
-          ? record.image.map(img => pb.files.getURL(record, img))
-          : ['https://via.placeholder.com/400x400?text=No+Image'],
-        originalPrice: undefined // Remove featured discount
-      }));
+      const transformedProducts: Product[] = records.map(record => {
+        // Ensure stock is a proper number
+        let stock = record.stock;
+        if (stock !== undefined && stock !== null) {
+          stock = Number(stock);
+          if (isNaN(stock)) {
+            console.warn('Invalid stock value for product in ProductGrid:', record.name, stock);
+            stock = 0;
+          }
+        }
+        
+        const transformedProduct = {
+          id: record.id,
+          name: record.name,
+          description: record.description,
+          short_description: record.short_description,
+          price: record.price,
+          sale_price: record.sale_price === 0 ? undefined : record.sale_price,
+          weight: record.category || '100g', // Use category as weight for now
+          stock: stock, // Ensure stock is a number
+          images: record.image && record.image.length > 0
+            ? record.image.map(img => {
+                try {
+                  return pb.files.getURL(record, img);
+                } catch (error) {
+                  console.error('Error generating image URL in ProductGrid:', error);
+                  return 'https://via.placeholder.com/400x400?text=Error';
+                }
+              })
+            : ['https://via.placeholder.com/400x400?text=No+Image'],
+          image: record.image, // PocketBase raw field
+          hover_image: record.hover_image, // PocketBase hover image
+          originalPrice: undefined // Remove featured discount
+        };
+        
+        return transformedProduct;
+      });
 
+      console.log('ProductGrid - Setting real products from DB:', transformedProducts.map(p => ({
+        name: p.name,
+        price: p.price,
+        sale_price: p.sale_price
+      })));
+      
       setProducts(transformedProducts);
     } catch (error) {
       console.error('Error fetching products:', error);
-      // Fallback to demo products if error
+      console.error('Filter used:', 'hidden != true');
+      
+      // If the error is due to missing hidden field, try without filter
+      try {
+        console.log('Trying to fetch without hidden filter...');
+        const recordsWithoutFilter = await pb.collection('products').getFullList<PocketBaseProduct>({
+          sort: '-display_order,-created'
+        });
+        console.log('Products fetched without filter:', recordsWithoutFilter.length);
+        
+        // Filter out hidden products manually
+        const visibleProducts = recordsWithoutFilter.filter(record => !record.hidden);
+        console.log('Visible products after manual filter:', visibleProducts.length);
+        
+        // Transform visible products
+        const transformedProducts: Product[] = visibleProducts.map(record => {
+          let stock = record.stock;
+          if (stock !== undefined && stock !== null) {
+            stock = Number(stock);
+            if (isNaN(stock)) {
+              console.warn('Invalid stock value for product in ProductGrid:', record.name, stock);
+              stock = 0;
+            }
+          }
+          
+          return {
+            id: record.id,
+            name: record.name,
+            description: record.description,
+            short_description: record.short_description,
+            price: record.price,
+            sale_price: record.sale_price,
+            weight: record.category || '100g',
+            stock: stock,
+            images: record.image && record.image.length > 0
+              ? record.image.map(img => {
+                  try {
+                    return pb.files.getURL(record, img);
+                  } catch (error) {
+                    console.error('Error generating image URL in ProductGrid:', error);
+                    return 'https://via.placeholder.com/400x400?text=Error';
+                  }
+                })
+              : ['https://via.placeholder.com/400x400?text=No+Image'],
+            image: record.image,
+            hover_image: record.hover_image,
+            originalPrice: undefined
+          };
+        });
+        
+        console.log('ProductGrid - Setting products from fallback manual filter:', transformedProducts.map(p => ({
+          name: p.name,
+          price: p.price,
+          sale_price: p.sale_price
+        })));
+        
+        setProducts(transformedProducts);
+        return; // Exit early if successful
+      } catch (fallbackError) {
+        console.error('Fallback fetch also failed:', fallbackError);
+      }
+      
+      // Fallback to demo products if both attempts fail
+      console.log('ProductGrid - Using fallback demo products due to errors');
       setProducts([
     {
       id: '1',
       name: 'Hōji-cha - Strong Roasted',
       description: 'A deeply roasted green tea with a smoky, earthy aroma and robust flavor.',
       price: 18,
-      weight: '100gr',
+      weight: '100g',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
@@ -69,7 +245,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       name: 'Hōji-cha - Strong Roasted',
       description: 'A deeply roasted green tea with a smoky, earthy aroma and robust flavor.',
       price: 18,
-      weight: '100gr',
+      weight: '100g',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/f3bba78c5228f67b6184e5f8344191447ce20481?placeholderIfAbsent=true']
     },
     {
@@ -78,7 +254,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       description: 'High-quality ceremonial-grade matcha from Uji, Kyoto. ..',
       price: 13,
       originalPrice: 18,
-      weight: '30gr',
+      weight: '30g',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
@@ -87,7 +263,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
       price: 13,
       originalPrice: 18,
-      weight: '30gr',
+      weight: '30g',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
@@ -96,7 +272,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
       price: 13,
       originalPrice: 18,
-      weight: '30gr',
+      weight: '30g',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
@@ -105,7 +281,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
       price: 13,
       originalPrice: 18,
-      weight: '30gr',
+      weight: '30g',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
@@ -114,7 +290,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
       price: 13,
       originalPrice: 18,
-      weight: '30gr',
+      weight: '30g',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     },
     {
@@ -123,7 +299,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
       description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
       price: 13,
       originalPrice: 18,
-      weight: '30gr',
+      weight: '30g',
       images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
     }]);
     } finally {

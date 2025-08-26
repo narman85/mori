@@ -2,15 +2,21 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
+import { pb } from '@/integrations/supabase/client';
 
 export interface Product {
   id: string;
   name: string;
   description: string;
+  short_description?: string;
   price: number;
+  sale_price?: number;
   originalPrice?: number;
   weight: string;
   images?: string[];
+  image?: string[]; // PocketBase field
+  hover_image?: string; // PocketBase field
+  stock?: number; // PocketBase stock field
   quantity?: number;
 }
 
@@ -41,36 +47,112 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const handleAddToCart = async () => {
+    // Check stock availability
+    if (product.stock !== undefined && product.stock !== null) {
+      const currentInCart = cartItem?.quantity || 0;
+      if (product.stock <= 0) {
+        toast.error("Out of Stock", {
+          description: "This product is currently out of stock"
+        });
+        return;
+      }
+      if (currentInCart >= product.stock) {
+        toast.error("Stock Limit Reached", {
+          description: `Only ${product.stock} items available in stock`
+        });
+        return;
+      }
+    }
+
     setIsLoading(true);
     try {
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 500));
       addToCart(product);
+      
+      // Automatically open cart sidebar after adding item
+      setTimeout(() => {
+        onCartOpen?.();
+      }, 600); // Small delay to show the toast first
+      
       toast.success(`${product.name} added`, {
-        description: "Click to open cart",
-        duration: 3000,
-        action: {
-          label: "Open cart",
-          onClick: () => onCartOpen?.()
-        }
+        description: "Opening cart...",
+        duration: 2000,
+        position: "bottom-left"
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  const hasDiscount = product.sale_price && product.sale_price > 0 && product.sale_price < product.price;
   
-  // Tea images - by product type
-  const getTeaImage = (productName: string) => {
-    if (productName.toLowerCase().includes('matcha')) {
-      return 'https://images.unsplash.com/photo-1515823064-d6e0c04616a7?w=200&h=200&fit=crop&crop=center';
+  // Format weight with 'g' if it's just a number
+  const formatWeight = (weight: string) => {
+    if (!weight) return '';
+    
+    // Check if it's just a number (no letters)
+    const isOnlyNumber = /^\d+$/.test(weight.trim());
+    
+    if (isOnlyNumber) {
+      return `${weight}g`;
     }
-    if (productName.toLowerCase().includes('hōji') || productName.toLowerCase().includes('hojicha')) {
-      return 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=200&h=200&fit=crop&crop=center';
+    
+    return weight;
+  };
+  
+  
+  // Get product images with proper URLs
+  const getMainImage = () => {
+    // First try to get from PocketBase image field
+    if (product.image && product.image.length > 0) {
+      try {
+        // Create a minimal record object for pb.files.getURL
+        const record = {
+          id: product.id,
+          collectionId: 'az4zftchp7yppc0', // products collection ID
+          collectionName: 'products'
+        };
+        // Manual URL construction as fallback
+        const manualUrl = `http://127.0.0.1:8090/api/files/az4zftchp7yppc0/${product.id}/${product.image[0]}`;
+        const mainImageUrl = pb.files.getURL(record, product.image[0]) || manualUrl;
+        return mainImageUrl;
+      } catch (error) {
+        console.error('ProductCard - Error generating main image URL:', error);
+      }
     }
+    // Fallback to legacy images field
+    if (product.images && product.images.length > 0) {
+      return product.images[0];
+    }
+    // Default fallback
     return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop&crop=center';
   };
+
+  const getHoverImage = () => {
+    // Check if we have a dedicated hover image
+    if (product.hover_image) {
+      try {
+        // Create a minimal record object for pb.files.getURL
+        const record = {
+          id: product.id,
+          collectionId: 'az4zftchp7yppc0', // products collection ID
+          collectionName: 'products'
+        };
+        // Manual URL construction as fallback  
+        const manualHoverUrl = `http://127.0.0.1:8090/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
+        const hoverImageUrl = pb.files.getURL(record, product.hover_image) || manualHoverUrl;
+        return hoverImageUrl;
+      } catch (error) {
+        console.error('ProductCard - Error generating hover image URL:', error);
+      }
+    }
+    // If no hover image, return null (no hover effect)
+    return null;
+  };
+
+  const mainImageUrl = getMainImage();
+  const hoverImageUrl = getHoverImage();
 
   return (
     <article 
@@ -81,54 +163,61 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     >
       {/* Product Image */}
       <div className="w-full flex-shrink-0 relative overflow-hidden">
-        {/* Original image */}
+        {/* Main image */}
         <img
-          src={product.images?.[0] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop&crop=center'}
+          src={mainImageUrl}
           alt={product.name}
           className={`aspect-[1.06] object-cover w-full transition-opacity duration-[1500ms] ease-in-out ${
-            isHovered ? 'opacity-0' : 'opacity-100'
+            isHovered && hoverImageUrl ? 'opacity-0' : 'opacity-100'
           }`}
         />
         
-        {/* Hover image - overlay - use last image as hover if available */}
-        <img
-          src={
-            product.images && product.images.length > 1 
-              ? product.images[product.images.length - 1]  // Last image as hover
-              : getTeaImage(product.name)
-          }
-          alt={`${product.name} hover view`}
-          className={`absolute inset-0 aspect-[1.06] object-cover w-full transition-opacity duration-[1500ms] ease-in-out ${
-            isHovered ? 'opacity-100' : 'opacity-0'
-          }`}
-        />
+        {/* Hover image - only show if we have a dedicated hover image */}
+        {hoverImageUrl && (
+          <img
+            src={hoverImageUrl}
+            alt={`${product.name} hover`}
+            className={`aspect-[1.06] object-cover w-full absolute inset-0 transition-opacity duration-[1500ms] ease-in-out ${
+              isHovered ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        )}
       </div>
       
       {/* Product Info - takes remaining space */}
       <div className="bg-[rgba(238,238,238,1)] flex flex-col justify-between p-4 sm:p-6 flex-grow">
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          {/* Product Details */}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-black font-medium text-base leading-tight">
+        <div className="flex flex-col gap-4">
+          {/* Product Name and Price on same line */}
+          <div className="flex items-start justify-between">
+            <h3 className="text-black font-medium text-base leading-tight flex-1 min-w-0 pr-2">
               {product.name}
             </h3>
-            <p className="text-[rgba(80,80,80,1)] mt-2 text-sm sm:text-base leading-relaxed">
-              {product.description}
-            </p>
+            <div className="flex flex-col items-end text-right flex-shrink-0">
+              {hasDiscount && (
+                <div 
+                  className="text-black leading-none whitespace-nowrap text-sm"
+                  style={{
+                    textDecoration: 'line-through',
+                    textDecorationColor: 'red',
+                    textDecorationThickness: '2px'
+                  }}
+                >
+                  {product.price} EUR
+                </div>
+              )}
+              <div className={`text-black leading-none whitespace-nowrap font-medium text-base ${hasDiscount ? 'mt-1' : ''}`}>
+                {hasDiscount ? product.sale_price : product.price} EUR
+              </div>
+            </div>
           </div>
           
-          {/* Price Info */}
-          <div className="flex flex-row sm:flex-col justify-between sm:justify-center items-center sm:items-end text-right flex-shrink-0 gap-2 sm:gap-1">
-            {hasDiscount && (
-              <div className="text-black leading-none line-through whitespace-nowrap text-sm sm:text-base">
-                {product.originalPrice} EUR
-              </div>
-            )}
-            <div className={`text-black leading-none whitespace-nowrap font-medium text-base sm:text-lg ${hasDiscount ? 'sm:mt-1' : ''}`}>
-              {product.price} EUR
-            </div>
-            <div className="text-[rgba(173,29,24,1)] text-sm whitespace-nowrap">
-              {product.weight}
+          {/* Description and Weight */}
+          <div className="flex flex-col gap-2">
+            <p className="text-[rgba(80,80,80,1)] text-sm sm:text-base leading-relaxed">
+              {product.short_description || product.description}
+            </p>
+            <div className="text-[rgba(173,29,24,1)] text-sm">
+              {formatWeight(product.weight)}
             </div>
           </div>
         </div>
@@ -141,11 +230,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             e.stopPropagation();
             handleAddToCart();
           }}
-          disabled={isLoading}
+          disabled={isLoading || (product.stock !== undefined && product.stock <= 0)}
           className="bg-[rgba(226,226,226,1)] flex w-full items-center justify-center gap-2 text-base text-black font-normal p-4 sm:p-6 border-[rgba(209,209,209,1)] border-t hover:bg-[rgba(216,216,216,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
         >
           <span>
-            {isLoading ? 'Adding...' : 'Add to cart'}
+            {isLoading 
+              ? 'Adding...' 
+              : (product.stock !== undefined && product.stock <= 0)
+                ? 'Out of Stock'
+                : 'Add to cart'
+            }
           </span>
         </button>
       ) : (
@@ -165,9 +259,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
+              // Check stock limit before incrementing
+              if (product.stock !== undefined && quantity >= product.stock) {
+                toast.error("Stock Limit Reached", {
+                  description: `Only ${product.stock} items available in stock`
+                });
+                return;
+              }
               updateQuantity(product.id, quantity + 1);
             }}
-            className="flex items-center justify-center w-8 h-8 hover:bg-[rgba(216,216,216,1)] rounded-full transition-colors"
+            disabled={product.stock !== undefined && quantity >= product.stock}
+            className="flex items-center justify-center w-8 h-8 hover:bg-[rgba(216,216,216,1)] rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             +
           </button>

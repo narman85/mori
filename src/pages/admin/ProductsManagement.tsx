@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Trash2, Package, GripVertical } from 'lucide-react';
+import { Plus, Edit, EyeOff, Eye, Package, GripVertical } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { pb } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import AddProductModal from '@/components/admin/AddProductModal';
-import EditProductModal from '@/components/admin/EditProductModal';
 import SimpleDragCard from '@/components/admin/SimpleDragCard';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -18,10 +17,14 @@ interface Product {
   price: number;
   category: string;
   in_stock: boolean;
+  stock?: number;
   image: string[];
   created: string;
   updated: string;
   display_order?: number;
+  order_count?: number;
+  total_sold?: number;
+  hidden?: boolean;
   preparation?: {
     amount: string;
     temperature: string;
@@ -33,19 +36,97 @@ interface Product {
 const ProductsManagement = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   // Fetch products from PocketBase
   const fetchProducts = async () => {
     try {
       setLoading(true);
+      console.log('Fetching products from PocketBase... V2');
       const records = await pb.collection('products').getFullList<Product>({
         sort: '-display_order,-created',
+        requestKey: `products-${Date.now()}` // Force fresh fetch
       });
-      setProducts(records);
+      console.log('Fetched products:', records.length);
+      
+      // Debug: Log ALL products stock info to find Earl Grey issue
+      records.forEach((record, index) => {
+        console.log(`Product ${index + 1}: ${record.name}`, {
+          id: record.id,
+          stock: record.stock,
+          in_stock: record.in_stock,
+          stockType: typeof record.stock
+        });
+        
+        // Special focus on Earl Grey
+        if (record.name.toLowerCase().includes('earl grey')) {
+          console.log('🔍 EARL GREY DEBUG:', JSON.stringify(record, null, 2));
+        }
+      });
+      
+      // Get order counts and total sales quantity for each product
+      const orderStatsPromises = records.map(async (record) => {
+        try {
+          const orderItems = await pb.collection('order_items').getFullList({
+            filter: `product = "${record.id}"`,
+            fields: 'id,quantity'
+          });
+          
+          const totalQuantity = orderItems.reduce((sum, item) => {
+            const quantity = Number(item.quantity) || 0;
+            return sum + quantity;
+          }, 0);
+          
+          return { 
+            productId: record.id, 
+            count: orderItems.length,
+            totalSold: totalQuantity 
+          };
+        } catch (error) {
+          console.warn('Could not fetch order stats for product:', record.name, error);
+          return { 
+            productId: record.id, 
+            count: 0,
+            totalSold: 0 
+          };
+        }
+      });
+
+      const orderStats = await Promise.all(orderStatsPromises);
+      const orderStatsMap = orderStats.reduce((acc, item) => {
+        acc[item.productId] = { count: item.count, totalSold: item.totalSold };
+        return acc;
+      }, {} as Record<string, { count: number; totalSold: number }>);
+
+      // Process the records to handle preparation data and ensure stock is a number
+      const processedRecords = records.map(record => {
+        // Ensure stock is a proper number
+        if (record.stock !== undefined && record.stock !== null) {
+          record.stock = Number(record.stock);
+          if (isNaN(record.stock)) {
+            console.warn('Invalid stock value for product:', record.name, record.stock);
+            record.stock = 0;
+          }
+        }
+        
+        // Add order stats
+        const stats = orderStatsMap[record.id] || { count: 0, totalSold: 0 };
+        record.order_count = stats.count;
+        record.total_sold = stats.totalSold;
+        
+        if (record.preparation && typeof record.preparation === 'string') {
+          try {
+            record.preparation = JSON.parse(record.preparation);
+          } catch (parseError) {
+            console.warn('Could not parse preparation data for product:', record.id, parseError);
+            record.preparation = undefined;
+          }
+        }
+        return record;
+      });
+      
+      setProducts(processedRecords);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast({
@@ -60,8 +141,7 @@ const ProductsManagement = () => {
 
   // Edit product
   const editProduct = (product: Product) => {
-    setSelectedProduct(product);
-    setShowEditModal(true);
+    navigate(`/admin/products/edit/${product.id}`);
   };
 
   // Move product (drag & drop)
@@ -97,29 +177,107 @@ const ProductsManagement = () => {
     }
   };
 
-  // Delete product
-  const deleteProduct = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+  // Toggle product visibility (hide/show)
+  const toggleProductVisibility = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    const isHidden = product.hidden || false;
+    const action = isHidden ? 'show' : 'hide';
+    const confirmMsg = isHidden 
+      ? `Show "${product.name}" in store for customers?`
+      : `Hide "${product.name}" from store? Customers won't see it.`;
+    
+    if (!confirm(confirmMsg)) return;
     
     try {
-      await pb.collection('products').delete(productId);
-      await fetchProducts(); // Refresh list
+      await pb.collection('products').update(productId, {
+        hidden: !isHidden
+      });
+      
+      await fetchProducts();
+      
       toast({
         title: "Success",
-        description: "Product deleted successfully",
+        description: `Product ${action === 'hide' ? 'hidden from' : 'shown in'} store`,
       });
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error(`Error ${action}ing product:`, error);
       toast({
         title: "Error",
-        description: "Failed to delete product",
+        description: `Failed to ${action} product. Please try again.`,
         variant: "destructive",
       });
     }
   };
 
+
   useEffect(() => {
     fetchProducts();
+
+    // Subscribe to real-time changes
+    const unsubscribe = pb.collection('products').subscribe('*', function (e) {
+      console.log('Real-time product update:', e.action, e.record);
+      console.log('Product stock in real-time:', e.record.stock);
+      console.log('Product in_stock in real-time:', e.record.in_stock);
+      
+      // Always refresh the list on any change
+      if (e.action === 'delete' || e.action === 'update' || e.action === 'create') {
+        console.log('Refreshing product list due to:', e.action);
+        fetchProducts(); // Refresh entire list
+        return;
+      }
+      
+      try {
+        let processedRecord = { ...e.record } as Product;
+        
+        // Ensure stock is a proper number in real-time updates
+        if (processedRecord.stock !== undefined && processedRecord.stock !== null) {
+          processedRecord.stock = Number(processedRecord.stock);
+          if (isNaN(processedRecord.stock)) {
+            console.warn('Invalid stock value in real-time update:', processedRecord.name, processedRecord.stock);
+            processedRecord.stock = 0;
+          }
+        }
+        
+        // Parse preparation data if it's a string
+        if (processedRecord.preparation && typeof processedRecord.preparation === 'string') {
+          try {
+            processedRecord.preparation = JSON.parse(processedRecord.preparation);
+          } catch (parseError) {
+            console.warn('Could not parse preparation data:', parseError);
+            processedRecord.preparation = undefined;
+          }
+        }
+        
+        if (e.action === 'create') {
+          // Add new product to the list
+          setProducts(prev => [processedRecord, ...prev]);
+        } else if (e.action === 'update') {
+          // Update existing product
+          setProducts(prev => {
+            const exists = prev.find(p => p.id === e.record.id);
+            if (exists) {
+              return prev.map(product => 
+                product.id === e.record.id ? processedRecord : product
+              );
+            } else {
+              return [processedRecord, ...prev];
+            }
+          });
+        } else if (e.action === 'delete') {
+          // Remove deleted product
+          setProducts(prev => prev.filter(product => product.id !== e.record.id));
+        }
+      } catch (error) {
+        console.error('Error processing real-time update:', error);
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      unsubscribe?.then(unsub => unsub?.());
+    };
   }, []);
 
   if (loading) {
@@ -146,7 +304,7 @@ const ProductsManagement = () => {
           </div>
           <Button 
             className="flex items-center gap-2"
-            onClick={() => setShowAddModal(true)}
+            onClick={() => navigate('/admin/products/new')}
           >
             <Plus className="h-4 w-4" />
             Add Product
@@ -163,7 +321,7 @@ const ProductsManagement = () => {
             </p>
             <Button 
               className="flex items-center gap-2"
-              onClick={() => setShowAddModal(true)}
+              onClick={() => navigate('/admin/products/new')}
             >
               <Plus className="h-4 w-4" />
               Add Your First Product
@@ -179,7 +337,7 @@ const ProductsManagement = () => {
                 product={product}
                 index={index}
                 onEdit={editProduct}
-                onDelete={deleteProduct}
+                onToggleVisibility={toggleProductVisibility}
                 moveProduct={moveProduct}
               />
             ))}
@@ -187,20 +345,6 @@ const ProductsManagement = () => {
         </div>
       )}
 
-      {/* Add Product Modal */}
-      <AddProductModal
-        open={showAddModal}
-        onOpenChange={setShowAddModal}
-        onProductAdded={fetchProducts}
-      />
-
-      {/* Edit Product Modal */}
-      <EditProductModal
-        open={showEditModal}
-        onOpenChange={setShowEditModal}
-        onProductUpdated={fetchProducts}
-        product={selectedProduct}
-      />
       </div>
     </DndProvider>
   );

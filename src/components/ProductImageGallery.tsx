@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 interface ProductImageGalleryProps {
   images?: string[];
   productName: string;
-  excludeHoverImage?: boolean; // Hide last image if it's a hover image
+  excludeHoverImage?: boolean; // Hide last image if it's a hover image (deprecated)
 }
 
 const ProductImageGallery = ({ images, productName, excludeHoverImage = false }: ProductImageGalleryProps) => {
@@ -15,15 +15,10 @@ const ProductImageGallery = ({ images, productName, excludeHoverImage = false }:
   const [translateX, setTranslateX] = useState(0);
   const imageRef = useRef<HTMLDivElement>(null);
 
-  // Filter out hover image (last image) if excludeHoverImage is true
+  // Process images - just show all provided images
   const processedImages = (() => {
     if (!images || images.length === 0) {
       return ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center'];
-    }
-    
-    if (excludeHoverImage && images.length > 1) {
-      // Remove last image (hover image) from gallery
-      return images.slice(0, -1);
     }
     
     return images;
@@ -68,12 +63,18 @@ const ProductImageGallery = ({ images, productName, excludeHoverImage = false }:
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault();
+    // Only prevent default for specific cases to avoid passive listener warnings
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     setStartX(e.touches[0].clientX);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault();
+    // Only prevent default for specific cases to avoid passive listener warnings
+    if (e.cancelable) {
+      e.preventDefault();
+    }
     const currentX = e.touches[0].clientX;
     const diff = startX - currentX;
     setTranslateX(diff);

@@ -131,6 +131,27 @@ export const Checkout: React.FC = () => {
 
       await Promise.all(orderItemPromises);
 
+      // Update stock quantities for each product
+      const stockUpdatePromises = cart.map(async (item) => {
+        try {
+          // Get current product data to get current stock
+          const currentProduct = await pb.collection('products').getOne(item.id);
+          const newStock = Math.max(0, (currentProduct.stock || 0) - item.quantity);
+          
+          // Update product stock (but keep product active)
+          await pb.collection('products').update(item.id, {
+            stock: newStock
+            // Don't change in_stock - keep product visible even if stock is 0
+          });
+          
+          console.log(`Updated ${item.name} stock: ${currentProduct.stock || 0} -> ${newStock}`);
+        } catch (error) {
+          console.error(`Failed to update stock for ${item.name}:`, error);
+        }
+      });
+
+      await Promise.all(stockUpdatePromises);
+
       // Clear cart and redirect
       clearCart();
       toast.success('Order placed and payment processed successfully!');

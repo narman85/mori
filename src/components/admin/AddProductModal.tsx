@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { pb } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -25,31 +24,25 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    short_description: '',
     price: '',
-    category: '',
+    sale_price: '',
+    weight: '',
     in_stock: true,
+    stock: '',
     preparation: {
       amount: '',
       temperature: '',
       steepTime: '',
-      taste: ''
+      taste: '',
+      grams: '',
+      ml: ''
     }
   });
 
   const [mainImages, setMainImages] = useState<File[]>([]);
   const [hoverImage, setHoverImage] = useState<File | null>(null);
 
-  const categories = [
-    'Black Tea',
-    'Green Tea',
-    'White Tea',
-    'Oolong Tea',
-    'Herbal Tea',
-    'Fruit Tea',
-    'Tea Accessories',
-    'Gift Sets',
-    'Other'
-  ];
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
@@ -138,8 +131,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
     setFormData({
       name: '',
       description: '',
+      short_description: '',
       price: '',
-      category: '',
+      sale_price: '',
+      weight: '',
       in_stock: true,
       preparation: {
         amount: '',
@@ -202,37 +197,54 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
         : 1;
 
       // Check preparation data
-      const hasPreparationData = Object.values(formData.preparation).some(value => value.trim() !== '');
+      const hasPreparationData = Object.values(formData.preparation).some(value => {
+        if (typeof value === 'string') {
+          return value.trim() !== '';
+        }
+        return false;
+      });
 
-      // Combine main images and hover image
-      const allImages = [...mainImages];
-      if (hoverImage) {
-        allImages.push(hoverImage);
-      }
-
-      // If we have images, use FormData for everything
-      if (allImages.length > 0) {
+      // If we have any images or files, use FormData
+      if (mainImages.length > 0 || hoverImage) {
         const data = new FormData();
         
         // Add all fields to FormData
         data.append('name', formData.name);
         data.append('description', formData.description || '');
+        data.append('short_description', formData.short_description || '');
         data.append('price', formData.price);
-        data.append('category', formData.category || '');
+        data.append('sale_price', formData.sale_price || '');
+        data.append('category', formData.weight ? `${formData.weight}g` : '');
         data.append('in_stock', formData.in_stock.toString());
+        data.append('stock', formData.stock || '0');
         data.append('display_order', nextOrder.toString());
         
         // Add preparation data as JSON string if any field is filled
         if (hasPreparationData) {
-          data.append('preparation', JSON.stringify(formData.preparation));
+          // Combine grams and ml into amount field
+          const preparationData = {
+            ...formData.preparation,
+            amount: formData.preparation.grams && formData.preparation.ml 
+              ? `${formData.preparation.grams}g per ${formData.preparation.ml}ml`
+              : formData.preparation.amount || ''
+          };
+          // Remove separate grams and ml fields
+          delete preparationData.grams;
+          delete preparationData.ml;
+          
+          data.append('preparation', JSON.stringify(preparationData));
         }
         
-        // Add images - each file separately
-        allImages.forEach((file) => {
+        // Add main images
+        mainImages.forEach((file) => {
           data.append('image', file);
         });
 
-        
+        // Add hover image separately
+        if (hoverImage) {
+          data.append('hover_image', hoverImage);
+        }
+
         record = await pb.collection('products').create(data);
         
       } else {
@@ -240,9 +252,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
         const productData: any = {
           name: formData.name,
           description: formData.description || '',
+          short_description: formData.short_description || '',
           price: parseFloat(formData.price),
-          category: formData.category || '',
+          sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
+          category: formData.weight ? `${formData.weight}g` : '',
           in_stock: formData.in_stock,
+          stock: parseInt(formData.stock) || 0,
           display_order: nextOrder,
         };
 
@@ -297,20 +312,61 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
             />
           </div>
 
-          {/* Description */}
+          {/* Short Description for Cards */}
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Enter product description"
-              rows={3}
-            />
+            <Label htmlFor="short_description">Short Description (for product cards)</Label>
+            <div className="relative">
+              <Input
+                id="short_description"
+                value={formData.short_description}
+                onChange={(e) => {
+                  const value = e.target.value.slice(0, 70);
+                  handleInputChange('short_description', value);
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const paste = (e.clipboardData || (window as any).clipboardData).getData('text');
+                  const value = paste.slice(0, 70);
+                  handleInputChange('short_description', value);
+                }}
+                placeholder="Brief description for product cards (max 70 characters)"
+                maxLength={70}
+              />
+              <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-xs text-gray-400">
+                {formData.short_description.length}/70
+              </div>
+            </div>
           </div>
 
-          {/* Price and Category */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Full Description for Detail Page */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Full Description (for product detail page)</Label>
+            <div className="relative">
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => {
+                  const value = e.target.value.slice(0, 500);
+                  handleInputChange('description', value);
+                }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const paste = (e.clipboardData || (window as any).clipboardData).getData('text');
+                  const value = paste.slice(0, 500);
+                  handleInputChange('description', value);
+                }}
+                placeholder="Detailed description for product detail page (max 500 characters)"
+                rows={4}
+                maxLength={500}
+              />
+              <div className="absolute bottom-2 right-3 text-xs text-gray-400 bg-white px-1">
+                {formData.description.length}/500
+              </div>
+            </div>
+          </div>
+
+          {/* Price, Sale Price, Weight and Stock */}
+          <div className="grid grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label htmlFor="price">Price ($) *</Label>
               <Input
@@ -325,19 +381,45 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select onValueChange={(value) => handleInputChange('category', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="sale_price">Sale Price ($)</Label>
+              <Input
+                id="sale_price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.sale_price}
+                onChange={(e) => handleInputChange('sale_price', e.target.value)}
+                placeholder="Discount price"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="weight">Weight (grams)</Label>
+              <div className="relative">
+                <Input
+                  id="weight"
+                  type="number"
+                  min="1"
+                  value={formData.weight}
+                  onChange={(e) => handleInputChange('weight', e.target.value)}
+                  placeholder="Enter weight"
+                  className="pr-8"
+                />
+                <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-sm text-gray-500">
+                  g
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stock">Stock Quantity *</Label>
+              <Input
+                id="stock"
+                type="number"
+                min="0"
+                value={formData.stock}
+                onChange={(e) => handleInputChange('stock', e.target.value)}
+                placeholder="0"
+                required
+              />
             </div>
           </div>
 
@@ -441,13 +523,24 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="prep-amount">Amount (e.g., "1 tsp per cup")</Label>
-                <Input
-                  id="prep-amount"
-                  value={formData.preparation.amount}
-                  onChange={(e) => handlePreparationChange('amount', e.target.value)}
-                  placeholder="1 tsp per cup"
-                />
+                <Label>Amount</Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    value={formData.preparation.grams || ''}
+                    onChange={(e) => handlePreparationChange('grams', e.target.value)}
+                    placeholder="3"
+                    className="w-20"
+                    maxLength="5"
+                  />
+                  <span className="text-sm text-gray-600">g per</span>
+                  <Input
+                    value={formData.preparation.ml || ''}
+                    onChange={(e) => handlePreparationChange('ml', e.target.value)}
+                    placeholder="500"
+                    className="w-24"
+                  />
+                  <span className="text-sm text-gray-600">ml</span>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="prep-temperature">Temperature (e.g., "80-85°C")</Label>
@@ -455,7 +548,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                   id="prep-temperature"
                   value={formData.preparation.temperature}
                   onChange={(e) => handlePreparationChange('temperature', e.target.value)}
-                  placeholder="80-85°C"
+                  placeholder="80"
                 />
               </div>
             </div>
@@ -467,7 +560,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                   id="prep-steeptime"
                   value={formData.preparation.steepTime}
                   onChange={(e) => handlePreparationChange('steepTime', e.target.value)}
-                  placeholder="2-3 minutes"
+                  placeholder="3"
                 />
               </div>
               <div className="space-y-2">
@@ -476,7 +569,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
                   id="prep-taste"
                   value={formData.preparation.taste}
                   onChange={(e) => handlePreparationChange('taste', e.target.value)}
-                  placeholder="Light & floral"
+                  placeholder="Rich Smooth"
                 />
               </div>
             </div>

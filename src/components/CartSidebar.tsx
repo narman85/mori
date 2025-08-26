@@ -13,19 +13,19 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
   const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const navigate = useNavigate();
 
-  if (!isOpen) return null;
-
   return (
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/50 z-50 transition-opacity"
+        className={`fixed inset-0 bg-black/50 z-50 transition-opacity duration-500 ${
+          isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
         onClick={onClose}
       />
       
       {/* Sidebar */}
-      <div className={`fixed right-0 top-0 h-screen w-full max-w-md bg-white z-50 transform transition-transform duration-300 ease-in-out shadow-2xl flex flex-col ${
-        isOpen ? 'translate-x-0' : 'translate-x-full'
+      <div className={`fixed right-0 top-0 h-screen w-full max-w-md bg-white z-50 transform transition-all duration-500 ease-out shadow-2xl flex flex-col ${
+        isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
       }`}>
         
         {/* Header */}
@@ -107,12 +107,20 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                         <Trash2 className="w-4 h-4" />
                       </button>
                       <div className="text-right">
-                        <div className="font-medium">
-                          {(item.price * item.quantity).toFixed(2)} EUR
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {item.price} EUR / each
-                        </div>
+                        {item.sale_price && item.sale_price > 0 && item.sale_price < item.price ? (
+                          <>
+                            <div className="font-medium">
+                              {(item.sale_price * item.quantity).toFixed(2)} EUR
+                            </div>
+                            <div className="text-xs text-gray-400 line-through">
+                              {(item.price * item.quantity).toFixed(2)} EUR
+                            </div>
+                          </>
+                        ) : (
+                          <div className="font-medium">
+                            {(item.price * item.quantity).toFixed(2)} EUR
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

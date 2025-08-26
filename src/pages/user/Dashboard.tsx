@@ -94,6 +94,51 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+
+    // Subscribe to real-time order changes for dashboard updates
+    if (user) {
+      const unsubscribe = pb.collection('orders').subscribe('*', function (e) {
+        console.log('Real-time order update for dashboard:', e.action, e.record);
+        
+        // Only process changes for current user's orders
+        if (e.record && e.record.user === user.id) {
+          if (e.action === 'update') {
+            // Update recent orders if it's in the list
+            setRecentOrders(prevOrders =>
+              prevOrders.map(order =>
+                order.id === e.record.id
+                  ? { ...order, status: e.record.status, updated: e.record.updated }
+                  : order
+              )
+            );
+
+            // Recalculate stats when order status changes
+            fetchDashboardData();
+            
+            // Show toast notification for status changes
+            const statusText = e.record.status.charAt(0).toUpperCase() + e.record.status.slice(1);
+            toast.success(`Order Status Updated`, {
+              description: `Order #${e.record.id.slice(-8).toUpperCase()} is now ${statusText}`,
+              duration: 5000,
+              position: "top-right"
+            });
+          } else if (e.action === 'create') {
+            // Refresh dashboard data when new order is created
+            fetchDashboardData();
+            
+            toast.success('New Order Created', {
+              description: `Order #${e.record.id.slice(-8).toUpperCase()} has been created`,
+              duration: 5000,
+              position: "top-right"
+            });
+          }
+        }
+      });
+
+      return () => {
+        unsubscribe?.then(unsub => unsub?.());
+      };
+    }
   }, [user]);
 
   const getStatusConfig = (status: RecentOrder['status']) => {
