@@ -113,13 +113,33 @@ export const Checkout: React.FC = () => {
       const shipping = subtotal > 50 ? 0 : 5;
       const total = subtotal + shipping;
 
+      // Check if this is an OAuth user and get real database ID
+      let actualUserId = user?.id;
+      
+      if (user?.id && (user.id.startsWith('oauth-') || user.id.startsWith('temp-'))) {
+        console.log('🔍 OAuth user detected, finding real database ID for order...');
+        try {
+          const realUsers = await pb.collection('users').getFullList({
+            filter: `email = "${user.email}"`
+          });
+          if (realUsers && realUsers.length > 0) {
+            actualUserId = realUsers[0].id;
+            console.log('✅ Found real user ID in database:', actualUserId);
+          } else {
+            console.log('⚠️ Real user not found in database, using OAuth session');
+          }
+        } catch (error) {
+          console.log('⚠️ Could not search for real user:', error);
+        }
+      }
+
       const orderData = {
-        ...(user?.id ? { user: user.id } : {}), // Only include user field if user exists
+        ...(actualUserId ? { user: actualUserId } : {}), // Only use real database ID
         total_price: total,
         status: 'paid', // Mark as paid since payment succeeded
         shipping_address: shippingInfo,
-        // For guest users, add guest information
-        ...((!user) && {
+        // For guest users only
+        ...(!user && {
           guest_email: shippingInfo.email,
           guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
           guest_phone: shippingInfo.phone
@@ -128,7 +148,7 @@ export const Checkout: React.FC = () => {
 
       console.log('Creating order with data:', orderData);
       
-      // For guest users, we need to use the public API endpoint or create with proper permissions
+      // For guest users, use public API
       let order;
       if (!user) {
         // Guest order - create without authentication using public API

@@ -200,22 +200,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const REDIRECT_URI = `${window.location.origin}/auth/oauth-callback`;
       const SCOPE = "openid email profile";
       const STATE = Math.random().toString(36).substring(2);
+      const NONCE = Math.random().toString(36).substring(2);
       
-      // Store state for verification
+      // Store state and nonce for verification
       localStorage.setItem('oauth_state', STATE);
+      localStorage.setItem('oauth_nonce', NONCE);
       
       // Build Google OAuth URL
       const googleAuthUrl = new URL('https://accounts.google.com/o/oauth2/auth');
       googleAuthUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
       googleAuthUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-      googleAuthUrl.searchParams.set('response_type', 'code');
+      googleAuthUrl.searchParams.set('response_type', 'code token id_token');
       googleAuthUrl.searchParams.set('scope', SCOPE);
       googleAuthUrl.searchParams.set('state', STATE);
+      googleAuthUrl.searchParams.set('nonce', NONCE);
       googleAuthUrl.searchParams.set('access_type', 'offline');
       
       console.log('🔗 Redirecting to Google OAuth');
       
-      // Redirect to Google OAuth
+      // Simple full page redirect - most reliable
       window.location.href = googleAuthUrl.toString();
       
       return { error: null };
