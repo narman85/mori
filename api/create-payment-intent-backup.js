@@ -1,5 +1,14 @@
-// Simple Stripe API integration without external packages
-export default async function handler(req, res) {
+// Backend API for creating real Stripe payment intents
+const Stripe = require('stripe');
+
+let stripe;
+try {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+} catch (error) {
+  console.error('Failed to initialize Stripe:', error);
+}
+
+module.exports = async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -11,7 +20,8 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ error: 'Method not allowed' });
+    return;
   }
 
   try {
@@ -19,6 +29,11 @@ export default async function handler(req, res) {
     if (!process.env.STRIPE_SECRET_KEY) {
       console.error('STRIPE_SECRET_KEY not found in environment');
       return res.status(500).json({ error: 'Stripe not configured' });
+    }
+
+    if (!stripe) {
+      console.error('Stripe not initialized');
+      return res.status(500).json({ error: 'Stripe initialization failed' });
     }
 
     const { amount, currency = 'eur' } = req.body;
@@ -29,29 +44,19 @@ export default async function handler(req, res) {
 
     console.log('Creating payment intent for amount:', amount, currency);
 
-    // Create payment intent using native fetch
-    const stripeResponse = await fetch('https://api.stripe.com/v1/payment_intents', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+    // Create payment intent with Stripe
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Convert to cents
+      currency: currency,
+      automatic_payment_methods: {
+        enabled: true,
       },
-      body: new URLSearchParams({
-        amount: Math.round(amount * 100).toString(),
-        currency: currency,
-        'automatic_payment_methods[enabled]': 'true',
-        'metadata[integration]': 'mori-vercel',
-        'metadata[environment]': 'production'
-      }).toString()
+      metadata: {
+        integration: 'mori-vercel',
+        environment: 'production'
+      }
     });
 
-    if (!stripeResponse.ok) {
-      const errorData = await stripeResponse.text();
-      console.error('Stripe API error:', errorData);
-      return res.status(500).json({ error: 'Failed to create payment intent' });
-    }
-
-    const paymentIntent = await stripeResponse.json();
     console.log('Payment intent created:', paymentIntent.id);
 
     res.status(200).json({
@@ -65,7 +70,8 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Error creating payment intent:', error);
     res.status(500).json({ 
-      error: error.message || 'Internal server error'
+      error: error.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }
