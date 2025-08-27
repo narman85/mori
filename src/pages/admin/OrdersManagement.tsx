@@ -266,6 +266,22 @@ const OrdersManagement = () => {
     });
   };
 
+  // Get customer email - either from user account or shipping address (for guest users)
+  const getCustomerEmail = (order: Order) => {
+    // If user is logged in and has an email, use that
+    if (order.expand?.user?.email) {
+      return order.expand.user.email;
+    }
+    
+    // For guest users, use the shipping address email
+    if (order.shipping_address?.email) {
+      return order.shipping_address.email;
+    }
+    
+    // Last fallback
+    return 'No email provided';
+  };
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -335,7 +351,7 @@ const OrdersManagement = () => {
                         </Badge>
                       </CardTitle>
                       <CardDescription>
-                        Customer: {order.expand?.user?.email || 'Unknown'} • 
+                        Customer: {getCustomerEmail(order)} • 
                         {new Date(order.created).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
@@ -434,7 +450,7 @@ const OrdersManagement = () => {
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700">Customer</label>
-                  <p className="text-sm text-gray-900">{selectedOrder.expand?.user?.email || 'Unknown'}</p>
+                  <p className="text-sm text-gray-900">{getCustomerEmail(selectedOrder)}</p>
                 </div>
                 
                 <div>
