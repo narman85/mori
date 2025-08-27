@@ -159,28 +159,6 @@ const Profile = () => {
             </CardContent>
           </Card>
 
-          {/* Account Stats */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Account Statistics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">0</div>
-                  <div className="text-sm text-gray-500">Total Orders</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-600">€0.00</div>
-                  <div className="text-sm text-gray-500">Total Spent</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-600">0</div>
-                  <div className="text-sm text-gray-500">Products Purchased</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

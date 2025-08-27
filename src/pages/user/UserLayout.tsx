@@ -35,12 +35,6 @@ const UserLayout = () => {
 
   const navigation = [
     {
-      name: 'Dashboard',
-      href: '/account',
-      icon: User,
-      current: location.pathname === '/account'
-    },
-    {
       name: 'Profile',
       href: '/account/profile',
       icon: User,
