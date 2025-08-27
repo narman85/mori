@@ -58,18 +58,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
           sale_price: record.sale_price === 0 ? undefined : record.sale_price,
           stock: stock,
           weight: record.category || '100g',
-          images: record.image && record.image.length > 0
-            ? record.image.map(img => {
-                try {
-                  return pb.files.getURL(record, img);
-                } catch (error) {
-                  console.error('Error generating image URL:', error);
-                  return 'https://via.placeholder.com/400x400?text=Error';
-                }
-              })
-            : ['https://via.placeholder.com/400x400?text=No+Image'],
-          image: record.image,
-          hover_image: record.hover_image,
+          images: [], // We don't use this field anymore for display
+          image: record.image, // Pass raw PocketBase image array
+          hover_image: record.hover_image, // Pass raw PocketBase hover image
           originalPrice: undefined
         };
       };
@@ -140,18 +131,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
           sale_price: record.sale_price === 0 ? undefined : record.sale_price,
           weight: record.category || '100g', // Use category as weight for now
           stock: stock, // Ensure stock is a number
-          images: record.image && record.image.length > 0
-            ? record.image.map(img => {
-                try {
-                  return pb.files.getURL(record, img);
-                } catch (error) {
-                  console.error('Error generating image URL in ProductGrid:', error);
-                  return 'https://via.placeholder.com/400x400?text=Error';
-                }
-              })
-            : ['https://via.placeholder.com/400x400?text=No+Image'],
-          image: record.image, // PocketBase raw field
-          hover_image: record.hover_image, // PocketBase hover image
+          images: [], // We don't use this field anymore for display
+          image: record.image, // Pass raw PocketBase image array
+          hover_image: record.hover_image, // Pass raw PocketBase hover image
           originalPrice: undefined // Remove featured discount
         };
         
@@ -201,18 +183,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
             sale_price: record.sale_price,
             weight: record.category || '100g',
             stock: stock,
-            images: record.image && record.image.length > 0
-              ? record.image.map(img => {
-                  try {
-                    return pb.files.getURL(record, img);
-                  } catch (error) {
-                    console.error('Error generating image URL in ProductGrid:', error);
-                    return 'https://via.placeholder.com/400x400?text=Error';
-                  }
-                })
-              : ['https://via.placeholder.com/400x400?text=No+Image'],
-            image: record.image,
-            hover_image: record.hover_image,
+            images: [], // We don't use this field anymore for display
+            image: record.image, // Pass raw PocketBase image array
+            hover_image: record.hover_image, // Pass raw PocketBase hover image
             originalPrice: undefined
           };
         });

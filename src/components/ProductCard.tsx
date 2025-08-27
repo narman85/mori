@@ -105,33 +105,38 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   
   // Get product images with proper URLs
   const getMainImage = () => {
-    // Check if we have base64 or URL images
-    if (product.images && product.images.length > 0) {
-      // Images array can contain base64 or URLs
-      return getImageUrl(product.images[0]);
-    }
-    
-    // Check PocketBase image field
+    // First check PocketBase image field (our uploaded images)
     if (product.image && product.image.length > 0) {
       const firstImage = product.image[0];
       
-      // If it's base64 or a full URL, return directly
-      if (firstImage.startsWith('data:') || firstImage.startsWith('http')) {
+      // If it's Imgur URL or other external URL, return directly
+      if (firstImage.startsWith('http')) {
         return firstImage;
       }
       
-      // Otherwise try to build PocketBase URL
+      // If it's base64, return directly
+      if (firstImage.startsWith('data:')) {
+        return firstImage;
+      }
+      
+      // Otherwise it's a PocketBase filename - build proper URL
       try {
-        const record = {
-          id: product.id,
-          collectionId: 'az4zftchp7yppc0',
-          collectionName: 'products'
-        };
-        const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
-        return pb.files.getURL(record, firstImage) || `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${firstImage}`;
+        // Use production URL when in production, local when in development
+        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const baseUrl = isProd 
+          ? 'https://mori-tea.pockethost.io' 
+          : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+        
+        // Use direct file URL format for PocketBase
+        return `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${firstImage}`;
       } catch (error) {
         console.error('ProductCard - Error generating image URL:', error);
       }
+    }
+    
+    // Fallback to images array if no PocketBase image
+    if (product.images && product.images.length > 0) {
+      return getImageUrl(product.images[0]);
     }
     
     // Default fallback
@@ -139,33 +144,68 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   };
 
   const getHoverImage = () => {
-    // Check if we have a hover image
+    // First check if we have a dedicated hover_image field
     if (product.hover_image) {
-      // If it's base64 or a full URL, return directly
-      if (product.hover_image.startsWith('data:') || product.hover_image.startsWith('http')) {
+      // If it's Imgur URL or other external URL, return directly
+      if (product.hover_image.startsWith('http')) {
         return product.hover_image;
       }
       
-      // Otherwise try to build PocketBase URL
+      // If it's base64, return directly
+      if (product.hover_image.startsWith('data:')) {
+        return product.hover_image;
+      }
+      
+      // Otherwise it's a PocketBase filename - build proper URL
       try {
-        const record = {
-          id: product.id,
-          collectionId: 'az4zftchp7yppc0',
-          collectionName: 'products'
-        };
-        const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
-        return pb.files.getURL(record, product.hover_image) || `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
+        // Use production URL when in production, local when in development
+        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const baseUrl = isProd 
+          ? 'https://mori-tea.pockethost.io' 
+          : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+        
+        // Use direct file URL format for PocketBase
+        return `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
       } catch (error) {
         console.error('ProductCard - Error generating hover image URL:', error);
       }
     }
     
-    // Check if we have multiple images to use second as hover
+    // Check if we have multiple images in the image array to use second as hover
+    if (product.image && product.image.length > 1) {
+      const secondImage = product.image[1];
+      
+      // If it's Imgur URL or other external URL, return directly
+      if (secondImage.startsWith('http')) {
+        return secondImage;
+      }
+      
+      // If it's base64, return directly
+      if (secondImage.startsWith('data:')) {
+        return secondImage;
+      }
+      
+      // Otherwise it's a PocketBase filename - build proper URL
+      try {
+        // Use production URL when in production, local when in development
+        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const baseUrl = isProd 
+          ? 'https://mori-tea.pockethost.io' 
+          : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+        
+        return `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${secondImage}`;
+      } catch (error) {
+        console.error('ProductCard - Error generating hover image URL from array:', error);
+      }
+    }
+    
+    // Fallback to images array if available
     if (product.images && product.images.length > 1) {
       return getImageUrl(product.images[1]);
     }
     
-    // No hover image available
+    // Return the same main image for hover if no separate hover image
+    // This prevents the hover effect from showing if there's no second image
     return null;
   };
 
