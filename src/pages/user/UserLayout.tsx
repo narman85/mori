@@ -36,24 +36,11 @@ const UserLayout = () => {
 
   const navigation = [
     {
-      name: 'Profile',
-      href: '/account/profile',
-      icon: User,
-      current: location.pathname === '/account/profile' || location.pathname === '/account'
-    },
-    {
       name: 'Orders',
       href: '/account/orders',
       icon: Package,
-      current: location.pathname === '/account/orders'
-    },
-    // Only show Settings for non-OAuth users
-    ...(!isOAuthUser(user) ? [{
-      name: 'Settings',
-      href: '/account/settings',
-      icon: Settings,
-      current: location.pathname === '/account/settings'
-    }] : [])
+      current: location.pathname === '/account/orders' || location.pathname === '/account'
+    }
   ];
 
   const handleSignOut = async () => {

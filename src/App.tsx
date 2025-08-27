@@ -22,10 +22,7 @@ import OrdersManagement from "./pages/admin/OrdersManagement";
 import UsersManagement from "./pages/admin/UsersManagement";
 import UserDetail from "./pages/admin/UserDetail";
 import UserLayout from "./pages/user/UserLayout";
-import Profile from "./pages/user/Profile";
 import UserOrders from "./pages/user/UserOrders";
-import UserSettings from "./pages/user/UserSettings";
-import UserDashboard from "./pages/user/Dashboard";
 import OAuthCallback from "./pages/OAuthCallback";
 
 const queryClient = new QueryClient();
@@ -61,10 +58,8 @@ const App = () => (
               
               {/* User Account Routes */}
               <Route path="/account" element={<UserLayout />}>
-                <Route index element={<Profile />} />
-                <Route path="profile" element={<Profile />} />
+                <Route index element={<UserOrders />} />
                 <Route path="orders" element={<UserOrders />} />
-                <Route path="settings" element={<UserSettings />} />
               </Route>
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
