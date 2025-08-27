@@ -54,6 +54,13 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
+      console.log('🔍 Dashboard: Current user info:', {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        isOAuth: isOAuthUserId(user.id)
+      });
+      
       // Fetch all orders for statistics - including OAuth orders using consistent OAuth ID
       let filterQuery;
       

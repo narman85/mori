@@ -78,6 +78,13 @@ export const Checkout: React.FC = () => {
       let isOAuthUserFlag = false;
       let oauthUserId = null;
       
+      console.log('🔍 Checkout: Current user info:', {
+        id: user?.id,
+        email: user?.email,
+        name: user?.name,
+        isOAuth: user?.id ? isOAuthUserId(user.id) : false
+      });
+      
       if (user?.id) {
         if (isOAuthUserId(user.id)) {
           console.log('🔍 OAuth user detected, will create guest order with user info');
@@ -87,22 +94,9 @@ export const Checkout: React.FC = () => {
           oauthUserId = generateOAuthUserId(user.email);
           console.log('📝 Generated OAuth user ID:', oauthUserId);
         } else {
-          // Regular registered user - try to use their ID
-          try {
-            const realUsers = await pb.collection('users').getFullList({
-              filter: `email = "${user.email}"`
-            });
-            if (realUsers && realUsers.length > 0) {
-              actualUserId = realUsers[0].id;
-              console.log('✅ Found real user ID in database:', actualUserId);
-            } else {
-              console.log('⚠️ Real user not found in database, treating as guest');
-              actualUserId = null;
-            }
-          } catch (error) {
-            console.log('⚠️ Could not search for real user:', error);
-            actualUserId = null;
-          }
+          // Regular registered user - use their ID directly
+          actualUserId = user.id;
+          console.log('✅ Using regular user ID for order:', actualUserId);
         }
       }
 
@@ -326,6 +320,13 @@ export const Checkout: React.FC = () => {
       let isOAuthUserFlag = false;
       let oauthUserId = null;
       
+      console.log('🔍 Checkout: Current user info:', {
+        id: user?.id,
+        email: user?.email,
+        name: user?.name,
+        isOAuth: user?.id ? isOAuthUserId(user.id) : false
+      });
+      
       if (user?.id) {
         if (isOAuthUserId(user.id)) {
           console.log('🔍 OAuth user detected, will create guest order with user info');
@@ -335,22 +336,9 @@ export const Checkout: React.FC = () => {
           oauthUserId = generateOAuthUserId(user.email);
           console.log('📝 Generated OAuth user ID:', oauthUserId);
         } else {
-          // Regular registered user - try to use their ID
-          try {
-            const realUsers = await pb.collection('users').getFullList({
-              filter: `email = "${user.email}"`
-            });
-            if (realUsers && realUsers.length > 0) {
-              actualUserId = realUsers[0].id;
-              console.log('✅ Found real user ID in database:', actualUserId);
-            } else {
-              console.log('⚠️ Real user not found in database, treating as guest');
-              actualUserId = null;
-            }
-          } catch (error) {
-            console.log('⚠️ Could not search for real user:', error);
-            actualUserId = null;
-          }
+          // Regular registered user - use their ID directly
+          actualUserId = user.id;
+          console.log('✅ Using regular user ID for order:', actualUserId);
         }
       }
 
