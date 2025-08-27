@@ -29,9 +29,22 @@ interface User {
   collectionName: string;
 }
 
+interface OAuthUser {
+  id: string;
+  email: string;
+  name: string;
+  oauth_provider?: string;
+  created: string;
+  isOAuth: true;
+  username: string;
+  verified: boolean;
+  collectionId: string;
+  collectionName: string;
+}
+
 interface Order {
   id: string;
-  user: string;
+  user?: string;
   total_price: number;
   status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   shipping_address: {
@@ -44,14 +57,18 @@ interface Order {
     postalCode: string;
     country: string;
   };
+  guest_email?: string;
+  guest_name?: string;
   created: string;
   updated: string;
 }
 
-interface UserWithOrders extends User {
+interface UserWithOrders extends (User | OAuthUser) {
   orders?: Order[];
   totalOrders?: number;
   totalSpent?: number;
+  isOAuth?: boolean;
+  shippingAddresses?: Order['shipping_address'][];
 }
 
 const UserDetail = () => {
@@ -72,30 +89,108 @@ const UserDetail = () => {
   const fetchUser = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Fetching user details...');
+      console.log('🔄 Fetching user details for ID:', id);
       
-      const userRecord = await pb.collection('users').getOne<User>(id);
-      console.log('✅ User fetched:', userRecord);
+      let userRecord: UserWithOrders | null = null;
+      let orders: Order[] = [];
+      
+      // Check if this is an OAuth user ID
+      if (id?.startsWith('oauth-')) {
+        console.log('🔍 OAuth user detected, extracting from orders...');
+        
+        // Extract email from OAuth ID - more robust approach
+        console.log('📧 Extracting email from OAuth ID:', id);
+        
+        // Try to find orders by searching all guest orders and matching by ID pattern
+        const allGuestOrders = await pb.collection('orders').getFullList<Order>({
+          filter: `guest_email != ""`,
+          sort: '-created'
+        });
+        
+        // Find orders that match this OAuth user by reconstructing the ID from email
+        orders = allGuestOrders.filter(order => {
+          if (!order.guest_email) return false;
+          const reconstructedId = `oauth-${order.guest_email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          return reconstructedId === id;
+        });
+        
+        console.log(`📧 Found ${orders.length} orders matching OAuth ID pattern`);
+        
+        if (orders.length > 0) {
+          // Create virtual OAuth user from first order
+          const firstOrder = orders[0];
+          const oauthUser: UserWithOrders = {
+            id: id,
+            username: firstOrder.guest_email || 'oauth-user',
+            email: firstOrder.guest_email || 'no-email',
+            name: firstOrder.guest_name || firstOrder.shipping_address?.firstName + ' ' + firstOrder.shipping_address?.lastName || 'OAuth User',
+            created: firstOrder.created,
+            updated: firstOrder.created,
+            verified: true,
+            emailVisibility: true,
+            collectionId: 'oauth',
+            collectionName: 'oauth_users',
+            isOAuth: true,
+            orders,
+            totalOrders: orders.length,
+            totalSpent: orders.reduce((sum, order) => sum + order.total_price, 0),
+            shippingAddresses: []
+          };
+          
+          // Extract unique shipping addresses
+          const uniqueAddresses = new Map<string, Order['shipping_address']>();
+          orders.forEach(order => {
+            if (order.shipping_address) {
+              const key = `${order.shipping_address.firstName}_${order.shipping_address.lastName}_${order.shipping_address.address}`;
+              uniqueAddresses.set(key, order.shipping_address);
+            }
+          });
+          
+          oauthUser.shippingAddresses = Array.from(uniqueAddresses.values());
+          
+          console.log(`✅ OAuth user created: ${oauthUser.name} with ${orders.length} orders and ${oauthUser.shippingAddresses.length} addresses`);
+          userRecord = oauthUser;
+        } else {
+          throw new Error('OAuth user not found');
+        }
+      } else {
+        // Regular registered user
+        console.log('🔍 Regular user, fetching from users collection...');
+        const regularUser = await pb.collection('users').getOne<User>(id);
+        console.log('✅ Regular user fetched:', regularUser);
 
-      // Fetch orders for this user
-      console.log('🔄 Fetching orders for user...');
-      const orders = await pb.collection('orders').getFullList<Order>({
-        filter: `user = "${id}"`,
-        sort: '-created'
-      });
+        // Fetch orders for this user (both linked and guest orders with same email)
+        console.log('🔄 Fetching orders for regular user...');
+        orders = await pb.collection('orders').getFullList<Order>({
+          filter: `(user = "${id}" || guest_email = "${regularUser.email}")`,
+          sort: '-created'
+        });
+        
+        userRecord = {
+          ...regularUser,
+          isOAuth: false,
+          orders,
+          totalOrders: orders.length,
+          totalSpent: orders.reduce((sum, order) => sum + order.total_price, 0),
+          shippingAddresses: []
+        };
+        
+        // Extract unique shipping addresses for regular users too
+        const uniqueAddresses = new Map<string, Order['shipping_address']>();
+        orders.forEach(order => {
+          if (order.shipping_address) {
+            const key = `${order.shipping_address.firstName}_${order.shipping_address.lastName}_${order.shipping_address.address}`;
+            uniqueAddresses.set(key, order.shipping_address);
+          }
+        });
+        
+        userRecord.shippingAddresses = Array.from(uniqueAddresses.values());
+      }
       
       const totalSpent = orders.reduce((sum, order) => sum + order.total_price, 0);
-      
       console.log(`📊 User orders: ${orders.length} orders, €${totalSpent.toFixed(2)}`);
       
-      const userWithOrders: UserWithOrders = {
-        ...userRecord,
-        orders,
-        totalOrders: orders.length,
-        totalSpent
-      };
-
-      setUser(userWithOrders);
+      setUser(userRecord);
       setUserOrders(orders);
       
     } catch (error) {
@@ -252,23 +347,30 @@ const UserDetail = () => {
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                user.verified 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-yellow-100 text-yellow-800'
-              }`}>
-                {user.verified ? (
-                  <>
-                    <UserCheck className="h-3 w-3 mr-1" />
-                    Verified
-                  </>
-                ) : (
-                  <>
-                    <UserX className="h-3 w-3 mr-1" />
-                    Unverified
-                  </>
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  user.verified 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {user.verified ? (
+                    <>
+                      <UserCheck className="h-3 w-3 mr-1" />
+                      Verified
+                    </>
+                  ) : (
+                    <>
+                      <UserX className="h-3 w-3 mr-1" />
+                      Unverified
+                    </>
+                  )}
+                </span>
+                {user.isOAuth && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    OAuth
+                  </span>
                 )}
-              </span>
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -312,6 +414,49 @@ const UserDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Shipping Addresses Section - Only for users with addresses */}
+        {user.shippingAddresses && user.shippingAddresses.length > 0 && (
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border p-6">
+            <h2 className="text-xl font-semibold text-gray-900 border-b pb-3 mb-4">
+              Shipping Addresses ({user.shippingAddresses.length})
+            </h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {user.shippingAddresses.map((address, index) => (
+                <div key={index} className="border rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-medium text-gray-900">Address #{index + 1}</h3>
+                    {user.isOAuth && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        OAuth User
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium text-gray-900">
+                        {address.firstName} {address.lastName}
+                      </span>
+                    </div>
+                    
+                    <div className="text-gray-600">
+                      <div>{address.email}</div>
+                      <div>{address.phone}</div>
+                    </div>
+                    
+                    <div className="text-gray-600">
+                      <div>{address.address}</div>
+                      <div>{address.city}, {address.postalCode}</div>
+                      <div>{address.country}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Orders Section */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
