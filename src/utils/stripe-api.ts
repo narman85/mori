@@ -1,5 +1,5 @@
 // Real Stripe API integration  
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
 const STRIPE_API_BASE = 'https://api.stripe.com/v1';
 
 interface PaymentIntentResponse {
