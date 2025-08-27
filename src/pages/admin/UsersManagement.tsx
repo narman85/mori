@@ -400,57 +400,142 @@ const UsersManagement = () => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">
-                    User
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-60">
-                    Email
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                    Orders
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">
-                    Total Spent
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                    Created
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+          <div className="space-y-3">
+            {/* Mobile/Responsive Cards */}
+            <div className="block lg:hidden">
+              {filteredUsers.map((user) => (
+                <div key={user.id} className="bg-white border rounded-lg p-4 shadow-sm">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                        <span className="text-sm font-medium text-gray-700">
+                          {(user.name || user.username || user.email).charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-medium text-gray-900 truncate">
+                            {user.name || user.username || 'No name'}
+                          </h3>
+                          {user.isOAuth && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              OAuth
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 truncate">
+                          {user.isOAuth ? user.email : `@${user.username}`}
+                        </p>
+                        <p className="text-xs text-gray-400">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewUser(user)}
+                        className="mb-2"
+                      >
+                        <Eye className="h-3 w-3 mr-1" />
+                        View
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Status:</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          user.verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {user.verified ? (
+                            <>
+                              <UserCheck className="h-3 w-3 mr-1" />
+                              Verified
+                            </>
+                          ) : (
+                            <>
+                              <UserX className="h-3 w-3 mr-1" />
+                              Unverified
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <span className="text-gray-500">Orders:</span>
+                      <div className="flex items-center gap-1 mt-1">
+                        <ShoppingCart className="h-4 w-4 text-gray-400" />
+                        <span className="font-medium">{user.totalOrders || 0}</span>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <span className="text-gray-500">Total Spent:</span>
+                      <p className="font-medium text-gray-900 mt-1">€{(user.totalSpent || 0).toFixed(2)}</p>
+                    </div>
+                    
+                    <div>
+                      <span className="text-gray-500">Created:</span>
+                      <p className="text-xs text-gray-600 mt-1">{formatDate(user.created)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table */}
+            <div className="hidden lg:block">
+              <table className="w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      User
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
+                      Orders
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-center">
+                      Spent
+                    </th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                 {filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-700">
-                              {(user.name || user.username || user.email).charAt(0).toUpperCase()}
-                            </span>
-                          </div>
+                    <td className="px-3 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-medium text-gray-700">
+                            {(user.name || user.username || user.email).charAt(0).toUpperCase()}
+                          </span>
                         </div>
-                        <div className="ml-3">
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-gray-900 truncate">
                               {user.name || user.username || 'No name'}
                             </div>
                             {user.isOAuth && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
                                 OAuth
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-500 truncate">
                             {user.isOAuth ? user.email : `@${user.username}`}
                           </div>
                         </div>
@@ -522,6 +607,7 @@ const UsersManagement = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
