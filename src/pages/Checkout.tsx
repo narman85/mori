@@ -72,32 +72,48 @@ export const Checkout: React.FC = () => {
       const shipping = subtotal > 50 ? 0 : 5;
       const total = subtotal + shipping;
 
-      // Check if this is an OAuth user and get real database ID
-      let actualUserId = user?.id;
+      // Handle OAuth users - don't use user ID for orders if OAuth
+      let actualUserId = null;
+      let isOAuthUser = false;
       
-      if (user?.id && (user.id.startsWith('oauth-') || user.id.startsWith('temp-'))) {
-        console.log('🔍 OAuth user detected, finding real database ID for order...');
-        try {
-          const realUsers = await pb.collection('users').getFullList({
-            filter: `email = "${user.email}"`
-          });
-          if (realUsers && realUsers.length > 0) {
-            actualUserId = realUsers[0].id;
-            console.log('✅ Found real user ID in database:', actualUserId);
-          } else {
-            console.log('⚠️ Real user not found in database, using OAuth session');
+      if (user?.id) {
+        if (user.id.startsWith('oauth-') || user.id.startsWith('temp-') || user.id.startsWith('google-')) {
+          console.log('🔍 OAuth user detected, will create guest order with user info');
+          isOAuthUser = true;
+          actualUserId = null; // Don't link to user ID for OAuth users
+        } else {
+          // Regular registered user - try to use their ID
+          try {
+            const realUsers = await pb.collection('users').getFullList({
+              filter: `email = "${user.email}"`
+            });
+            if (realUsers && realUsers.length > 0) {
+              actualUserId = realUsers[0].id;
+              console.log('✅ Found real user ID in database:', actualUserId);
+            } else {
+              console.log('⚠️ Real user not found in database, treating as guest');
+              actualUserId = null;
+            }
+          } catch (error) {
+            console.log('⚠️ Could not search for real user:', error);
+            actualUserId = null;
           }
-        } catch (error) {
-          console.log('⚠️ Could not search for real user:', error);
         }
       }
 
       const orderData = {
-        ...(actualUserId ? { user: actualUserId } : {}), // Only use real database ID
+        ...(actualUserId ? { user: actualUserId } : {}), // Only use real database ID if found
         total_price: total,
-        status: 'pending', // Start as pending
+        status: 'pending',
         shipping_address: shippingInfo,
-        // For guest users only
+        // For OAuth users, store their info like guest users
+        ...(isOAuthUser && {
+          guest_email: user.email,
+          guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+          guest_phone: shippingInfo.phone,
+          oauth_user_id: user.id // Store OAuth ID for reference
+        }),
+        // For guest users (no login)
         ...(!user && {
           guest_email: shippingInfo.email,
           guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
