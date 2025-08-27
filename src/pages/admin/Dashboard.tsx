@@ -64,7 +64,9 @@ const Dashboard = () => {
       
       orderItems.forEach(item => {
         if (item.expand?.order && 
-            (item.expand.order.status === 'paid' || item.expand.order.status === 'completed') &&
+            (item.expand.order.status === 'paid' || 
+             item.expand.order.status === 'delivered' || 
+             item.expand.order.status === 'shipped') &&
             item.expand?.product) {
           const productId = item.expand.product.id;
           const quantity = item.quantity || 0;
@@ -87,7 +89,10 @@ const Dashboard = () => {
           name: item.product.name,
           totalSold: item.totalSold,
           image: item.product.image,
-          price: item.product.price || item.product.sale_price || 0
+          // Use sale_price if available and valid, otherwise use regular price
+          price: (item.product.sale_price && item.product.sale_price > 0 && item.product.sale_price < item.product.price) 
+            ? item.product.sale_price 
+            : item.product.price || 0
         }))
         .sort((a, b) => b.totalSold - a.totalSold)
         .slice(0, 5); // Top 5 products
@@ -126,9 +131,13 @@ const Dashboard = () => {
         fields: 'id'
       });
 
-      // Calculate total revenue using total_price field
+      // Calculate total revenue - only count successful orders
       const totalRevenue = orders.reduce((sum, order) => {
-        return sum + (order.total_price || 0);
+        // Only count orders that are paid, delivered, or shipped (successful statuses)
+        if (order.status === 'paid' || order.status === 'delivered' || order.status === 'shipped') {
+          return sum + (order.total_price || 0);
+        }
+        return sum;
       }, 0);
 
       // Calculate total products sold (sum of all quantities from order items)
@@ -141,9 +150,11 @@ const Dashboard = () => {
         
         // Filter order items for successful orders and sum quantities
         totalProductsSold = orderItems.reduce((total, item) => {
-          // Check if the order is paid or completed
+          // Check if the order is paid, delivered, or shipped (successful statuses)
           if (item.expand?.order && 
-              (item.expand.order.status === 'paid' || item.expand.order.status === 'completed')) {
+              (item.expand.order.status === 'paid' || 
+               item.expand.order.status === 'delivered' || 
+               item.expand.order.status === 'shipped')) {
             return total + (item.quantity || 0);
           }
           return total;
@@ -157,9 +168,16 @@ const Dashboard = () => {
       // Get recent orders (last 10)
       const recentOrdersList = orders.slice(0, 10);
 
+      // Count only successful orders for total orders stat
+      const successfulOrdersCount = orders.filter(order => 
+        order.status === 'paid' || 
+        order.status === 'delivered' || 
+        order.status === 'shipped'
+      ).length;
+
       setStats({
         totalProducts: products.length,
-        totalOrders: orders.length,
+        totalOrders: successfulOrdersCount,
         totalSales: totalProductsSold,
         totalUsers: users.length,
         totalRevenue: totalRevenue
