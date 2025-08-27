@@ -1,4 +1,4 @@
-Deploy trigger - LIVE Stripe keys configured
-Timestamp: 2025-08-27 18:45
+Deploy trigger - Force rebuild with LIVE Stripe keys
+Timestamp: 2025-08-27 19:05
 Status: LIVE STRIPE ACCOUNT ACTIVE - Real payments enabled
-⚠️ PRODUCTION READY ⚠️
+⚠️ PRODUCTION READY - FORCE REBUILD ⚠️
