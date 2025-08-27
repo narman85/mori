@@ -54,20 +54,16 @@ const Dashboard = () => {
 
   const getTopSellingProducts = async (): Promise<TopProduct[]> => {
     try {
-      // Get all order items with product and order info
+      // Get all order items with product info
       const orderItems = await pb.collection('order_items').getFullList({
-        expand: 'product,order'
+        expand: 'product'
       });
 
-      // Filter successful orders and group by product
+      // Group all order items by product
       const productSales: { [key: string]: { product: any; totalSold: number } } = {};
       
       orderItems.forEach(item => {
-        if (item.expand?.order && 
-            (item.expand.order.status === 'paid' || 
-             item.expand.order.status === 'delivered' || 
-             item.expand.order.status === 'shipped') &&
-            item.expand?.product) {
+        if (item.expand?.product) {
           const productId = item.expand.product.id;
           const quantity = item.quantity || 0;
           
@@ -131,33 +127,20 @@ const Dashboard = () => {
         fields: 'id'
       });
 
-      // Calculate total revenue - only count successful orders
+      // Calculate total revenue from all orders
       const totalRevenue = orders.reduce((sum, order) => {
-        // Only count orders that are paid, delivered, or shipped (successful statuses)
-        if (order.status === 'paid' || order.status === 'delivered' || order.status === 'shipped') {
-          return sum + (order.total_price || 0);
-        }
-        return sum;
+        return sum + (order.total_price || 0);
       }, 0);
 
-      // Calculate total products sold (sum of all quantities from order items)
+      // Calculate total products sold (sum of all quantities from all order items)
       let totalProductsSold = 0;
       try {
-        // Get all order items for paid and completed orders
-        const orderItems = await pb.collection('order_items').getFullList({
-          expand: 'order'
-        });
+        // Get all order items
+        const orderItems = await pb.collection('order_items').getFullList();
         
-        // Filter order items for successful orders and sum quantities
+        // Sum all quantities from all order items
         totalProductsSold = orderItems.reduce((total, item) => {
-          // Check if the order is paid, delivered, or shipped (successful statuses)
-          if (item.expand?.order && 
-              (item.expand.order.status === 'paid' || 
-               item.expand.order.status === 'delivered' || 
-               item.expand.order.status === 'shipped')) {
-            return total + (item.quantity || 0);
-          }
-          return total;
+          return total + (item.quantity || 0);
         }, 0);
         
         console.log('Total products sold:', totalProductsSold);
@@ -168,19 +151,12 @@ const Dashboard = () => {
       // Get recent orders (last 10)
       const recentOrdersList = orders.slice(0, 10);
 
-      // Count only successful orders for total orders stat
-      const successfulOrdersCount = orders.filter(order => 
-        order.status === 'paid' || 
-        order.status === 'delivered' || 
-        order.status === 'shipped'
-      ).length;
-
       setStats({
         totalProducts: products.length,
-        totalOrders: successfulOrdersCount,
-        totalSales: totalProductsSold,
+        totalOrders: orders.length, // Total count of all orders
+        totalSales: totalProductsSold, // Total products sold
         totalUsers: users.length,
-        totalRevenue: totalRevenue
+        totalRevenue: totalRevenue // Total revenue from all orders
       });
 
       setRecentOrders(recentOrdersList);
