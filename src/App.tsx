@@ -61,7 +61,7 @@ const App = () => (
               
               {/* User Account Routes */}
               <Route path="/account" element={<UserLayout />}>
-                <Route index element={<UserDashboard />} />
+                <Route index element={<Profile />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="orders" element={<UserOrders />} />
                 <Route path="settings" element={<UserSettings />} />

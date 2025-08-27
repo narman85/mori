@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { isOAuthUser } from '@/utils/oauth-helpers';
 import { 
   User, 
   Package, 
@@ -38,7 +39,7 @@ const UserLayout = () => {
       name: 'Profile',
       href: '/account/profile',
       icon: User,
-      current: location.pathname === '/account/profile'
+      current: location.pathname === '/account/profile' || location.pathname === '/account'
     },
     {
       name: 'Orders',
@@ -46,12 +47,13 @@ const UserLayout = () => {
       icon: Package,
       current: location.pathname === '/account/orders'
     },
-    {
+    // Only show Settings for non-OAuth users
+    ...(!isOAuthUser(user) ? [{
       name: 'Settings',
       href: '/account/settings',
       icon: Settings,
       current: location.pathname === '/account/settings'
-    }
+    }] : [])
   ];
 
   const handleSignOut = async () => {
