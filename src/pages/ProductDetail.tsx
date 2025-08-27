@@ -165,7 +165,9 @@ const ProductDetail = () => {
       sale_price: product.sale_price, // Include sale_price for cart discount
       weight: product.weight || '',
       stock: product.stock,
-      images: product.image?.map(img => pb.files.getURL(product, img)) || []
+      images: productImages, // Use the same images we show in the gallery
+      image: product.image, // Raw image array for ProductCard compatibility
+      hover_image: product.hover_image
     };
     
     console.log('Adding to cart:', cartProduct);
@@ -204,7 +206,9 @@ const ProductDetail = () => {
       price: product.price,
       weight: product.weight || '',
       stock: product.stock,
-      images: product.image?.map(img => pb.files.getURL(product, img)) || []
+      images: productImages, // Use the same images we show in the gallery
+      image: product.image, // Raw image array for ProductCard compatibility
+      hover_image: product.hover_image
     };
     
     addToCart(cartProduct);
@@ -229,30 +233,37 @@ const ProductDetail = () => {
 
   // Get product images with proper URLs
   const getProductImages = () => {
-    // Temporary solution: Use demo images from CDN
-    const demoImages: { [key: string]: string[] } = {
-      'Hojicha tea': [
-        'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=800&h=800&fit=crop',
-        'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800&h=800&fit=crop',
-      ],
-      'Earl Grey': [
-        'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=800&h=800&fit=crop',
-        'https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=800&h=800&fit=crop',
-      ],
-    };
-    
-    // Return mapped images
-    if (demoImages[product.name]) {
-      return demoImages[product.name];
+    if (!product.image || product.image.length === 0) {
+      // No images available, return fallback
+      return ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop'];
     }
-    
-    // Use PocketBase URLs only in development
-    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && product.image) {
-      return product.image.map(img => pb.files.getURL(product, img));
-    }
-    
-    // Default fallback
-    return ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop'];
+
+    return product.image.map(img => {
+      // If it's already a full URL (Imgur, etc.), return directly
+      if (img.startsWith('http')) {
+        return img;
+      }
+      
+      // If it's base64, return directly
+      if (img.startsWith('data:')) {
+        return img;
+      }
+      
+      // Otherwise it's a PocketBase filename - build proper URL
+      try {
+        // Use production URL when in production, local when in development
+        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const baseUrl = isProd 
+          ? 'https://mori-tea.pockethost.io' 
+          : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+        
+        // Use direct file URL format for PocketBase
+        return `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${img}`;
+      } catch (error) {
+        console.error('ProductDetail - Error generating image URL:', error);
+        return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop';
+      }
+    });
   };
   
   const productImages = getProductImages();
