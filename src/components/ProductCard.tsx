@@ -114,7 +114,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           collectionName: 'products'
         };
         // Manual URL construction as fallback
-        const manualUrl = `http://127.0.0.1:8090/api/files/az4zftchp7yppc0/${product.id}/${product.image[0]}`;
+        const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+        const manualUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.image[0]}`;
         const mainImageUrl = pb.files.getURL(record, product.image[0]) || manualUrl;
         return mainImageUrl;
       } catch (error) {
@@ -140,7 +141,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           collectionName: 'products'
         };
         // Manual URL construction as fallback  
-        const manualHoverUrl = `http://127.0.0.1:8090/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
+        const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+        const manualHoverUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
         const hoverImageUrl = pb.files.getURL(record, product.hover_image) || manualHoverUrl;
         return hoverImageUrl;
       } catch (error) {

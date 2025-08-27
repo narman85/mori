@@ -153,7 +153,8 @@ export const Checkout: React.FC = () => {
       if (!user) {
         // Guest order - create without authentication using public API
         try {
-          const response = await fetch('http://127.0.0.1:8090/api/collections/orders/records', {
+          const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+          const response = await fetch(`${baseUrl}/api/collections/orders/records`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -193,7 +194,8 @@ export const Checkout: React.FC = () => {
 
         if (!user) {
           // Guest order item - use public API
-          const response = await fetch('http://127.0.0.1:8090/api/collections/order_items/records', {
+          const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+          const response = await fetch(`${baseUrl}/api/collections/order_items/records`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -219,14 +221,15 @@ export const Checkout: React.FC = () => {
         try {
           if (!user) {
             // Guest order - update stock via public API
-            const productResponse = await fetch(`http://127.0.0.1:8090/api/collections/products/records/${item.id}`);
+            const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+            const productResponse = await fetch(`${baseUrl}/api/collections/products/records/${item.id}`);
             if (!productResponse.ok) {
               throw new Error(`Failed to fetch product ${item.id}`);
             }
             const currentProduct = await productResponse.json();
             const newStock = Math.max(0, (currentProduct.stock || 0) - item.quantity);
             
-            const updateResponse = await fetch(`http://127.0.0.1:8090/api/collections/products/records/${item.id}`, {
+            const updateResponse = await fetch(`${baseUrl}/api/collections/products/records/${item.id}`, {
               method: 'PATCH',
               headers: {
                 'Content-Type': 'application/json',
