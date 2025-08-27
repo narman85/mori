@@ -226,26 +226,39 @@ const EditProduct: React.FC = () => {
         data.append('preparation', JSON.stringify(formData.preparation));
       }
       
-      // Handle image deletions
-      if (imagesToDelete.length > 0) {
-        imagesToDelete.forEach(imageName => {
-          data.append('image-', imageName);
-        });
-      }
+      // Calculate final image list (existing - deleted + new)
+      const finalImages = existingImages.filter(img => !imagesToDelete.includes(img));
       
-      // Handle hover image deletion
-      if (deleteHoverImage) {
-        data.append('hover_image', '');
-      }
+      console.log('🖼️ EditProduct - Image update:', {
+        existingImages,
+        imagesToDelete,
+        finalImages,
+        newMainImages: newMainImages.length,
+        existingHoverImage,
+        deleteHoverImage,
+        newHoverImage: !!newHoverImage
+      });
+      
+      // Set the remaining existing images first
+      finalImages.forEach(imageName => {
+        data.append('image', imageName);
+      });
       
       // Add new main images
       newMainImages.forEach((file) => {
         data.append('image', file);
       });
       
-      // Add new hover image
-      if (newHoverImage) {
+      // Handle hover image
+      if (deleteHoverImage) {
+        // If deleting hover image and no new one, set to empty
+        data.append('hover_image', '');
+      } else if (newHoverImage) {
+        // If new hover image, use it
         data.append('hover_image', newHoverImage);
+      } else if (existingHoverImage && !deleteHoverImage) {
+        // Keep existing hover image
+        data.append('hover_image', existingHoverImage);
       }
 
       await pb.collection('products').update(id!, data);
