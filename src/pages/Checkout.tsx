@@ -72,12 +72,9 @@ export const Checkout: React.FC = () => {
       const total = getTotalPrice() + (getTotalPrice() > 50 ? 0 : 5);
       console.log('Creating payment intent for total:', total);
       
-      // Use mock Stripe API for development/production without backend
-      const paymentIntent = await createMockPaymentIntent(total);
-      console.log('Payment intent created:', paymentIntent.id);
-      
-      setClientSecret(paymentIntent.client_secret);
-      setCurrentStep('payment');
+      // Skip payment for demo - directly create order
+      console.log('Skipping payment step for demo - creating order directly');
+      await handleOrderCreation();
     } catch (error) {
       console.error('Error creating payment intent:', error);
       toast.error('Failed to initialize payment: ' + (error.message || 'Unknown error'));

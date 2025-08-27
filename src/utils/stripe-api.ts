@@ -52,16 +52,14 @@ export async function createMockPaymentIntent(
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 1000));
   
-  // Mock client secret and id with proper Stripe format but identifiable
-  const timestamp = Date.now().toString().slice(-8);
-  const randomId = Math.random().toString(36).substring(2, 8);
-  const mockId = `pi_mock${timestamp}${randomId}`;
-  const mockSecret = Math.random().toString(36).substring(2, 22);
-  const mockClientSecret = `${mockId}_secret_${mockSecret}`;
+  // Generate proper Stripe-format mock data
+  const randomChars = () => Math.random().toString(36).substring(2, 10);
+  const mockId = `pi_3${randomChars()}${randomChars()}`;
+  const mockSecret = `${mockId}_secret_${randomChars()}${randomChars()}${randomChars()}`;
   
   return {
     id: mockId,
-    client_secret: mockClientSecret,
+    client_secret: mockSecret,
     amount: Math.round(amount * 100),
     currency: currency,
     status: 'requires_payment_method'
