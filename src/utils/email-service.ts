@@ -119,9 +119,21 @@ export const sendOrderConfirmationEmail = async (orderData: OrderEmailData): Pro
 // Using EmailJS for client-side email sending
 import emailjs from '@emailjs/browser';
 
+// Initialize EmailJS with public key
+const initEmailJS = () => {
+  const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
+  if (publicKey && publicKey !== 'demo_key') {
+    emailjs.init(publicKey);
+    console.log('✅ EmailJS initialized');
+  }
+};
+
+// Initialize on module load
+initEmailJS();
+
 export const sendOrderConfirmationEmailJS = async (orderData: OrderEmailData): Promise<boolean> => {
   try {
-    // Initialize EmailJS (you need to set these environment variables)
+    // Get EmailJS configuration from environment variables
     const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_demo';
     const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_demo';
     const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY || 'demo_key';

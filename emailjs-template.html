@@ -1,0 +1,158 @@
+<!-- 
+EmailJS Template for Order Confirmation
+Use this in your EmailJS dashboard when creating a template
+
+Variables to use:
+{{to_email}} - Customer's email
+{{customer_name}} - Customer's full name  
+{{order_id}} - Order ID
+{{order_total}} - Total price
+{{items_list}} - List of ordered items (text)
+{{items_html}} - HTML formatted items list
+{{shipping_address}} - Formatted shipping address
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Order Confirmation - Mori Tea Store</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        
+        <!-- Main Content Container -->
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #4a5568; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px;">Mori Tea Store</h1>
+              <p style="margin: 10px 0 0 0; color: #e2e8f0; font-size: 14px;">Premium Japanese Tea Collection</p>
+            </td>
+          </tr>
+          
+          <!-- Order Confirmation Title -->
+          <tr>
+            <td style="padding: 30px 30px 20px 30px;">
+              <h2 style="margin: 0; color: #2d3748; font-size: 24px; text-align: center;">
+                ✅ Order Confirmed!
+              </h2>
+            </td>
+          </tr>
+          
+          <!-- Customer Greeting -->
+          <tr>
+            <td style="padding: 0 30px 20px 30px;">
+              <p style="margin: 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                Dear {{customer_name}},
+              </p>
+              <p style="margin: 10px 0; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                Thank you for your order! We're excited to prepare your premium tea selection. Your order has been received and is being processed.
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Order Details Box -->
+          <tr>
+            <td style="padding: 0 30px 20px 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <h3 style="margin: 0 0 15px 0; color: #2d3748; font-size: 18px;">Order Details</h3>
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td style="padding: 5px 0; color: #718096; font-size: 14px;">Order ID:</td>
+                        <td style="padding: 5px 0; color: #2d3748; font-size: 14px; font-weight: bold; text-align: right;">
+                          #{{order_id}}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px 0; color: #718096; font-size: 14px;">Order Date:</td>
+                        <td style="padding: 5px 0; color: #2d3748; font-size: 14px; text-align: right;">
+                          Today
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 5px 0; color: #718096; font-size: 14px;">Total Amount:</td>
+                        <td style="padding: 5px 0; color: #2d3748; font-size: 16px; font-weight: bold; text-align: right;">
+                          €{{order_total}}
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Items Ordered -->
+          <tr>
+            <td style="padding: 0 30px 20px 30px;">
+              <h3 style="margin: 0 0 15px 0; color: #2d3748; font-size: 18px;">Items Ordered</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #e2e8f0; border-radius: 6px;">
+                <tr>
+                  <td style="padding: 15px;">
+                    <!-- This will be replaced with items_html from EmailJS -->
+                    <div style="white-space: pre-line; color: #4a5568; font-size: 14px; line-height: 1.8;">{{items_list}}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Shipping Address -->
+          <tr>
+            <td style="padding: 0 30px 20px 30px;">
+              <h3 style="margin: 0 0 15px 0; color: #2d3748; font-size: 18px;">Shipping Address</h3>
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <tr>
+                  <td style="padding: 15px;">
+                    <div style="white-space: pre-line; color: #4a5568; font-size: 14px; line-height: 1.8;">{{shipping_address}}</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Next Steps -->
+          <tr>
+            <td style="padding: 0 30px 30px 30px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #edf2f7; border-left: 4px solid #4299e1; padding: 15px; border-radius: 4px;">
+                <tr>
+                  <td>
+                    <h4 style="margin: 0 0 10px 0; color: #2b6cb0; font-size: 16px;">What's Next?</h4>
+                    <p style="margin: 0; color: #4a5568; font-size: 14px; line-height: 1.6;">
+                      • Your order is being prepared with care<br>
+                      • You'll receive a shipping confirmation email with tracking details<br>
+                      • Expected delivery: 3-5 business days
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f7fafc; padding: 30px; text-align: center; border-radius: 0 0 8px 8px;">
+              <p style="margin: 0 0 10px 0; color: #718096; font-size: 14px;">
+                Thank you for choosing Mori Tea Store!
+              </p>
+              <p style="margin: 0; color: #a0aec0; font-size: 12px;">
+                If you have any questions, please contact us at support@moritea.com
+              </p>
+              <p style="margin: 15px 0 0 0; color: #cbd5e0; font-size: 11px;">
+                © 2024 Mori Tea Store. All rights reserved.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
