@@ -53,11 +53,25 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch all orders for statistics
+      // Fetch all orders for statistics - including OAuth orders
+      let filterQuery = `user = "${user.id}"`;
+      
+      // If this is an OAuth user, also search by oauth_user_id and email
+      if (user.id.startsWith('oauth-') || user.id.startsWith('temp-') || user.id.startsWith('google-')) {
+        filterQuery = `(user = "${user.id}" || oauth_user_id = "${user.id}" || guest_email = "${user.email}")`;
+      } else {
+        // Regular user - also check for any OAuth orders made with same email
+        filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
+      }
+      
+      console.log('🔍 Dashboard: Fetching orders with filter:', filterQuery);
+      
       const allOrders = await pb.collection('orders').getFullList<RecentOrder>({
-        filter: `user = "${user.id}"`,
+        filter: filterQuery,
         expand: 'order_items(order)'
       });
+      
+      console.log('📊 Dashboard: Found orders:', allOrders.length);
 
       // Calculate statistics
       const stats = allOrders.reduce((acc, order) => {
@@ -76,9 +90,9 @@ const Dashboard = () => {
 
       setOrderStats(stats);
 
-      // Get recent orders (last 3)
+      // Get recent orders (last 3) - using same filter logic
       const recent = await pb.collection('orders').getList<RecentOrder>(1, 3, {
-        filter: `user = "${user.id}"`,
+        filter: filterQuery,
         sort: '-created',
         expand: 'order_items(order)'
       });

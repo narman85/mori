@@ -64,17 +64,33 @@ const UserOrders = () => {
     }
   };
 
-  // Fetch user orders
+  // Fetch user orders - including OAuth orders
   const fetchOrders = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
+      
+      // Build filter query to include OAuth orders
+      let filterQuery = `user = "${user.id}"`;
+      
+      // If this is an OAuth user, also search by oauth_user_id and email
+      if (user.id.startsWith('oauth-') || user.id.startsWith('temp-') || user.id.startsWith('google-')) {
+        filterQuery = `(user = "${user.id}" || oauth_user_id = "${user.id}" || guest_email = "${user.email}")`;
+      } else {
+        // Regular user - also check for any OAuth orders made with same email
+        filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
+      }
+      
+      console.log('🔍 UserOrders: Fetching orders with filter:', filterQuery);
+      
       const records = await pb.collection('orders').getFullList<Order>({
-        filter: `user = "${user.id}"`,
+        filter: filterQuery,
         sort: '-created',
         expand: 'order_items(order).product'
       });
+      
+      console.log('📦 UserOrders: Found orders:', records.length);
       setOrders(records);
     } catch (error) {
       console.error('Error fetching orders:', error);
