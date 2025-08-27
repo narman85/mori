@@ -121,16 +121,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       
       // Otherwise it's a PocketBase filename - build proper URL
       try {
-        // Use production URL when in production, local when in development
-        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const baseUrl = isProd 
-          ? 'https://mori-tea.pockethost.io' 
-          : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
-        
-        // Use direct file URL format for PocketBase
-        return `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${firstImage}`;
+        // Use PocketBase built-in method to generate correct URL
+        const imageUrl = pb.files.getURL(product, firstImage);
+        console.log('🖼️ Main image URL generated via pb.files.getURL:', imageUrl);
+        return imageUrl;
       } catch (error) {
-        console.error('ProductCard - Error generating image URL:', error);
+        console.error('ProductCard - Error generating image URL with pb.files.getURL:', error);
+        
+        // Fallback to manual URL construction
+        try {
+          const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+          const baseUrl = isProd 
+            ? 'https://mori-tea.pockethost.io' 
+            : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+          
+          const fallbackUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${firstImage}`;
+          console.log('🖼️ Main image fallback URL:', fallbackUrl);
+          return fallbackUrl;
+        } catch (fallbackError) {
+          console.error('ProductCard - Fallback URL generation failed:', fallbackError);
+        }
       }
     }
     
@@ -158,16 +168,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       
       // Otherwise it's a PocketBase filename - build proper URL
       try {
-        // Use production URL when in production, local when in development
-        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const baseUrl = isProd 
-          ? 'https://mori-tea.pockethost.io' 
-          : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
-        
-        // Use direct file URL format for PocketBase
-        return `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
+        // Use PocketBase built-in method to generate correct URL
+        const imageUrl = pb.files.getURL(product, product.hover_image);
+        console.log('🖼️ Hover image URL generated via pb.files.getURL:', imageUrl);
+        return imageUrl;
       } catch (error) {
-        console.error('ProductCard - Error generating hover image URL:', error);
+        console.error('ProductCard - Error generating hover image URL with pb.files.getURL:', error);
+        
+        // Fallback to manual URL construction
+        try {
+          const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+          const baseUrl = isProd 
+            ? 'https://mori-tea.pockethost.io' 
+            : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+          
+          const fallbackUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
+          console.log('🖼️ Hover image fallback URL:', fallbackUrl);
+          return fallbackUrl;
+        } catch (fallbackError) {
+          console.error('ProductCard - Fallback hover URL generation failed:', fallbackError);
+        }
       }
     }
     
@@ -187,15 +207,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       
       // Otherwise it's a PocketBase filename - build proper URL
       try {
-        // Use production URL when in production, local when in development
-        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const baseUrl = isProd 
-          ? 'https://mori-tea.pockethost.io' 
-          : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
-        
-        return `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${secondImage}`;
+        // Use PocketBase built-in method to generate correct URL
+        const imageUrl = pb.files.getURL(product, secondImage);
+        console.log('🖼️ Second image URL generated via pb.files.getURL:', imageUrl);
+        return imageUrl;
       } catch (error) {
-        console.error('ProductCard - Error generating hover image URL from array:', error);
+        console.error('ProductCard - Error generating second image URL with pb.files.getURL:', error);
+        
+        // Fallback to manual URL construction
+        try {
+          const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+          const baseUrl = isProd 
+            ? 'https://mori-tea.pockethost.io' 
+            : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+          
+          const fallbackUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${secondImage}`;
+          console.log('🖼️ Second image fallback URL:', fallbackUrl);
+          return fallbackUrl;
+        } catch (fallbackError) {
+          console.error('ProductCard - Fallback second image URL generation failed:', fallbackError);
+        }
       }
     }
     

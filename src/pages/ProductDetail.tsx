@@ -251,17 +251,27 @@ const ProductDetail = () => {
       
       // Otherwise it's a PocketBase filename - build proper URL
       try {
-        // Use production URL when in production, local when in development
-        const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-        const baseUrl = isProd 
-          ? 'https://mori-tea.pockethost.io' 
-          : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
-        
-        // Use direct file URL format for PocketBase
-        return `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${img}`;
+        // Use PocketBase built-in method to generate correct URL
+        const imageUrl = pb.files.getURL(product, img);
+        console.log('🖼️ ProductDetail image URL generated via pb.files.getURL:', imageUrl);
+        return imageUrl;
       } catch (error) {
-        console.error('ProductDetail - Error generating image URL:', error);
-        return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop';
+        console.error('ProductDetail - Error generating image URL with pb.files.getURL:', error);
+        
+        // Fallback to manual URL construction
+        try {
+          const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+          const baseUrl = isProd 
+            ? 'https://mori-tea.pockethost.io' 
+            : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+          
+          const fallbackUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${img}`;
+          console.log('🖼️ ProductDetail image fallback URL:', fallbackUrl);
+          return fallbackUrl;
+        } catch (fallbackError) {
+          console.error('ProductDetail - Fallback URL generation failed:', fallbackError);
+          return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop';
+        }
       }
     });
   };
