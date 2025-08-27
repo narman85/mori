@@ -71,15 +71,17 @@ const UserOrders = () => {
     try {
       setLoading(true);
       
-      // Build filter query to include OAuth orders
-      let filterQuery = `user = "${user.id}"`;
+      // Build filter query to include OAuth orders (simplified)
+      let filterQuery;
       
-      // If this is an OAuth user, also search by oauth_user_id and email
+      // If this is an OAuth user, search only by email (simpler approach)
       if (user.id.startsWith('oauth-') || user.id.startsWith('temp-') || user.id.startsWith('google-')) {
-        filterQuery = `(user = "${user.id}" || oauth_user_id = "${user.id}" || guest_email = "${user.email}")`;
+        filterQuery = `guest_email = "${user.email}"`;
+        console.log('🔍 UserOrders: OAuth user, searching by email only:', user.email);
       } else {
-        // Regular user - also check for any OAuth orders made with same email
+        // Regular user - search by user ID and also check guest orders with same email
         filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
+        console.log('🔍 UserOrders: Regular user, searching by ID and email');
       }
       
       console.log('🔍 UserOrders: Fetching orders with filter:', filterQuery);
