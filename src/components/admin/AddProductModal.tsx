@@ -9,6 +9,7 @@ import { pb } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X } from 'lucide-react';
 import DraggableImageGrid from './DraggableImageGrid';
+import { uploadMultipleToImgur, uploadToImgur } from '@/utils/imgur-upload';
 
 interface AddProductModalProps {
   open: boolean;
@@ -204,43 +205,91 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ open, onOpenChange, o
         return false;
       });
 
-      // If we have any images or files, use FormData
+      // Upload images to Imgur first
+      let uploadedImageUrls: string[] = [];
+      let uploadedHoverImageUrl = '';
+      
+      if (mainImages.length > 0) {
+        toast({
+          title: "Uploading images...",
+          description: "Please wait while we upload your images",
+        });
+        
+        try {
+          uploadedImageUrls = await uploadMultipleToImgur(mainImages);
+        } catch (uploadError) {
+          toast({
+            title: "Image Upload Failed",
+            description: "Failed to upload images. Please try again.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+      
+      if (hoverImage) {
+        try {
+          uploadedHoverImageUrl = await uploadToImgur(hoverImage);
+        } catch (uploadError) {
+          toast({
+            title: "Hover Image Upload Failed",
+            description: "Failed to upload hover image. Please try again.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Create product with Imgur URLs in the images field
+      const productData: any = {
+        name: formData.name,
+        description: formData.description || '',
+        short_description: formData.short_description || '',
+        price: Number(formData.price),
+        sale_price: formData.sale_price ? Number(formData.sale_price) : 0,
+        weight: formData.weight ? `${formData.weight}g` : '',
+        in_stock: formData.in_stock,
+        stock: Number(formData.stock) || 0,
+        display_order: nextOrder,
+        // Store Imgur URLs in a JSON field
+        images: uploadedImageUrls,
+        hover_image: uploadedHoverImageUrl || ''
+      };
+      
+      // Add preparation data if available
+      if (hasPreparationData) {
+        const preparationData = {
+          ...formData.preparation,
+          amount: formData.preparation.grams && formData.preparation.ml 
+            ? `${formData.preparation.grams}g per ${formData.preparation.ml}ml`
+            : formData.preparation.amount || ''
+        };
+        delete preparationData.grams;
+        delete preparationData.ml;
+        productData.preparation = JSON.stringify(preparationData);
+      }
+      
+      // If we still need to upload files to PocketBase (for backward compatibility)
       if (mainImages.length > 0 || hoverImage) {
         const data = new FormData();
         
         // Add all fields to FormData
-        data.append('name', formData.name);
-        data.append('description', formData.description || '');
-        data.append('short_description', formData.short_description || '');
-        data.append('price', formData.price);
-        data.append('sale_price', formData.sale_price || '');
-        data.append('category', formData.weight ? `${formData.weight}g` : '');
-        data.append('in_stock', formData.in_stock.toString());
-        data.append('stock', formData.stock || '0');
-        data.append('display_order', nextOrder.toString());
+        Object.keys(productData).forEach(key => {
+          if (key === 'images') {
+            // Skip images array as PocketBase expects files
+          } else {
+            data.append(key, productData[key].toString());
+          }
+        });
         
-        // Add preparation data as JSON string if any field is filled
-        if (hasPreparationData) {
-          // Combine grams and ml into amount field
-          const preparationData = {
-            ...formData.preparation,
-            amount: formData.preparation.grams && formData.preparation.ml 
-              ? `${formData.preparation.grams}g per ${formData.preparation.ml}ml`
-              : formData.preparation.amount || ''
-          };
-          // Remove separate grams and ml fields
-          delete preparationData.grams;
-          delete preparationData.ml;
-          
-          data.append('preparation', JSON.stringify(preparationData));
-        }
-        
-        // Add main images
+        // Add main images as files (PocketBase will store them)
         mainImages.forEach((file) => {
           data.append('image', file);
         });
 
-        // Add hover image separately
+        // Add hover image file if exists
         if (hoverImage) {
           data.append('hover_image', hoverImage);
         }

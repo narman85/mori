@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 import { pb } from '@/integrations/supabase/client';
+import { getImageUrl } from '@/utils/image-converter';
 
 export interface Product {
   id: string;
@@ -104,61 +105,22 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   
   // Get product images with proper URLs
   const getMainImage = () => {
-    // Temporary solution: Use demo images from CDN
-    // Map product names to specific tea images
-    const demoImages: { [key: string]: string } = {
-      'Hojicha tea': 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&h=400&fit=crop', // Hojicha tea
-      'Earl Grey': 'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=400&h=400&fit=crop', // Earl Grey tea
-    };
-    
-    // Return mapped image or fallback
-    if (demoImages[product.name]) {
-      return demoImages[product.name];
-    }
-    
-    // First try to get from PocketBase image field (for local development)
-    if (product.image && product.image.length > 0) {
-      try {
-        // Only use PocketBase URLs in development
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-          const record = {
-            id: product.id,
-            collectionId: 'az4zftchp7yppc0',
-            collectionName: 'products'
-          };
-          const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
-          const manualUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.image[0]}`;
-          const mainImageUrl = pb.files.getURL(record, product.image[0]) || manualUrl;
-          return mainImageUrl;
-        }
-      } catch (error) {
-        console.error('ProductCard - Error generating main image URL:', error);
-      }
-    }
-    
-    // Fallback to legacy images field
+    // Check if we have base64 or URL images
     if (product.images && product.images.length > 0) {
-      return product.images[0];
+      // Images array can contain base64 or URLs
+      return getImageUrl(product.images[0]);
     }
     
-    // Default fallback
-    return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop&crop=center';
-  };
-
-  const getHoverImage = () => {
-    // Temporary solution: Use demo hover images from CDN
-    const demoHoverImages: { [key: string]: string } = {
-      'Hojicha tea': 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop', // Tea ceremony
-      'Earl Grey': 'https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=400&h=400&fit=crop', // Tea leaves
-    };
-    
-    // Return mapped hover image
-    if (demoHoverImages[product.name]) {
-      return demoHoverImages[product.name];
-    }
-    
-    // Check if we have a dedicated hover image (for local development)
-    if (product.hover_image && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    // Check PocketBase image field
+    if (product.image && product.image.length > 0) {
+      const firstImage = product.image[0];
+      
+      // If it's base64 or a full URL, return directly
+      if (firstImage.startsWith('data:') || firstImage.startsWith('http')) {
+        return firstImage;
+      }
+      
+      // Otherwise try to build PocketBase URL
       try {
         const record = {
           id: product.id,
@@ -166,14 +128,44 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           collectionName: 'products'
         };
         const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
-        const manualHoverUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
-        const hoverImageUrl = pb.files.getURL(record, product.hover_image) || manualHoverUrl;
-        return hoverImageUrl;
+        return pb.files.getURL(record, firstImage) || `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${firstImage}`;
+      } catch (error) {
+        console.error('ProductCard - Error generating image URL:', error);
+      }
+    }
+    
+    // Default fallback
+    return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop&crop=center';
+  };
+
+  const getHoverImage = () => {
+    // Check if we have a hover image
+    if (product.hover_image) {
+      // If it's base64 or a full URL, return directly
+      if (product.hover_image.startsWith('data:') || product.hover_image.startsWith('http')) {
+        return product.hover_image;
+      }
+      
+      // Otherwise try to build PocketBase URL
+      try {
+        const record = {
+          id: product.id,
+          collectionId: 'az4zftchp7yppc0',
+          collectionName: 'products'
+        };
+        const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+        return pb.files.getURL(record, product.hover_image) || `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
       } catch (error) {
         console.error('ProductCard - Error generating hover image URL:', error);
       }
     }
-    // If no hover image, return null (no hover effect)
+    
+    // Check if we have multiple images to use second as hover
+    if (product.images && product.images.length > 1) {
+      return getImageUrl(product.images[1]);
+    }
+    
+    // No hover image available
     return null;
   };
 
