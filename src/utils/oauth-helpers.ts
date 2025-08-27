@@ -20,10 +20,9 @@ export const isOAuthUserId = (userId: string): boolean => {
 // Better way to detect OAuth users - by checking user object properties
 export const isOAuthUser = (user: any): boolean => {
   // Check if user has OAuth characteristics:
-  // 1. No username (OAuth users typically don't set usernames)
-  // 2. Has email
-  // 3. Has name (from OAuth provider)
-  // 4. ID doesn't look like manual registration
+  // 1. Username contains timestamp pattern (OAuth auto-generated)
+  // 2. Has email and name from OAuth provider
+  // 3. Username is auto-generated format: email-based + timestamp
   
   if (!user) return false;
   
@@ -32,11 +31,23 @@ export const isOAuthUser = (user: any): boolean => {
     return true;
   }
   
-  // Then check for OAuth characteristics
-  // OAuth users typically have no username but have name and email
-  const hasNoUsername = !user.username || user.username === user.email;
+  // Check for OAuth auto-generated username pattern
+  // OAuth users get usernames like: nariman-works-175629260159 (email-based + timestamp)
+  if (user.username && user.email) {
+    const emailPart = user.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '-');
+    const usernameStartsWithEmail = user.username.startsWith(emailPart);
+    const hasTimestamp = /\d{10,}/.test(user.username); // Contains 10+ digit timestamp
+    
+    if (usernameStartsWithEmail && hasTimestamp) {
+      console.log('🔍 Detected OAuth user by username pattern:', user.username);
+      return true;
+    }
+  }
+  
+  // Fallback: check if username looks auto-generated and has email/name
+  const hasAutoGenUsername = user.username && user.username.includes('-') && /\d+$/.test(user.username);
   const hasName = user.name && user.name.trim().length > 0;
   const hasEmail = user.email && user.email.includes('@');
   
-  return hasNoUsername && hasName && hasEmail;
+  return hasAutoGenUsername && hasName && hasEmail;
 };

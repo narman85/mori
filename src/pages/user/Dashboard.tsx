@@ -69,10 +69,9 @@ const Dashboard = () => {
       let filterQuery;
       
       if (userIsOAuth) {
-        // OAuth users: search ONLY by email (ignore user ID since it changes each login)
-        filterQuery = `guest_email = "${user.email}"`;
-        console.log('🔍 Dashboard: OAuth user, searching ONLY by EMAIL (ID changes each login):', user.email);
-        console.log('🔍 Dashboard: Ignoring user ID for OAuth user:', user.id);
+        // OAuth users: search by user ID AND email (they are real PocketBase users now)
+        filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
+        console.log('🔍 Dashboard: OAuth user (real PocketBase user), searching by user ID and email:', user.id, user.email);
       } else {
         // Regular user - search by user ID and also check guest orders with same email
         filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;

@@ -90,10 +90,10 @@ export const Checkout: React.FC = () => {
       
       if (user?.id) {
         if (userIsOAuth) {
-          // OAuth users - don't link user ID, treat as guest with user info
-          console.log('🔍 OAuth user detected, creating guest order with user info');
+          // OAuth users - they are real PocketBase users now, use their ID
+          console.log('🔍 OAuth user detected (real PocketBase user), using user ID');
           isOAuthUserFlag = true;
-          actualUserId = null; // Don't link user ID for OAuth users since they're not in users table
+          actualUserId = user.id; // Use real user ID for OAuth users
         } else {
           // Regular registered users - use their ID
           actualUserId = user.id;
@@ -333,10 +333,10 @@ export const Checkout: React.FC = () => {
       
       if (user?.id) {
         if (userIsOAuth) {
-          // OAuth users - don't link user ID, treat as guest with user info
-          console.log('🔍 OAuth user detected, creating guest order with user info');
+          // OAuth users - they are real PocketBase users now, use their ID
+          console.log('🔍 OAuth user detected (real PocketBase user), using user ID');
           isOAuthUserFlag = true;
-          actualUserId = null; // Don't link user ID for OAuth users since they're not in users table
+          actualUserId = user.id; // Use real user ID for OAuth users
         } else {
           // Regular registered users - use their ID
           actualUserId = user.id;

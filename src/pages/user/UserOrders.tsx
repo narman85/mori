@@ -85,12 +85,11 @@ const UserOrders = () => {
         fullUserObject: user
       });
       
-      // For OAuth users, always search primarily by email since their IDs can change
+      // For OAuth users, search by user ID and email (they are real PocketBase users now)
       if (userIsOAuth) {
-        // OAuth users: search ONLY by email (ignore user ID since it changes each login)
-        filterQuery = `guest_email = "${user.email}"`;
-        console.log('🔍 UserOrders: OAuth user, searching ONLY by EMAIL (ID changes each login):', user.email);
-        console.log('🔍 UserOrders: Ignoring user ID for OAuth user:', user.id);
+        // OAuth users: search by user ID AND email (they are real PocketBase users now)
+        filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
+        console.log('🔍 UserOrders: OAuth user (real PocketBase user), searching by user ID and email:', user.id, user.email);
       } else {
         // Regular user - search by user ID and email
         filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
