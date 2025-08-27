@@ -276,17 +276,63 @@ const UsersManagement = () => {
 
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    const user = users.find(u => u.id === userId);
+    const isOAuthUser = user?.isOAuth || false;
+    
+    const confirmMessage = isOAuthUser 
+      ? 'Are you sure you want to delete this OAuth user? This will delete all their orders. This action cannot be undone.'
+      : 'Are you sure you want to delete this user? This action cannot be undone.';
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
-      await pb.collection('users').delete(userId);
+      if (isOAuthUser) {
+        // OAuth user - delete all their orders (they don't exist in users table)
+        console.log('🗑️ Deleting OAuth user orders for:', user?.email);
+        
+        // Find and delete all orders for this OAuth user
+        const userOrders = await pb.collection('orders').getFullList({
+          filter: `guest_email = "${user?.email}"`
+        });
+        
+        console.log(`🗑️ Found ${userOrders.length} orders to delete for OAuth user`);
+        
+        // Delete order items first, then orders
+        for (const order of userOrders) {
+          try {
+            // Delete order items
+            const orderItems = await pb.collection('order_items').getFullList({
+              filter: `order = "${order.id}"`
+            });
+            
+            for (const item of orderItems) {
+              await pb.collection('order_items').delete(item.id);
+            }
+            
+            // Delete the order
+            await pb.collection('orders').delete(order.id);
+            console.log(`✅ Deleted order ${order.id} and its items`);
+          } catch (orderError) {
+            console.error(`❌ Error deleting order ${order.id}:`, orderError);
+          }
+        }
+        
+        toast.success(`OAuth user and ${userOrders.length} orders deleted successfully`);
+      } else {
+        // Regular user - delete from users table
+        await pb.collection('users').delete(userId);
+        toast.success('User deleted successfully');
+      }
+      
+      // Remove from UI
       setUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
-      toast.success('User deleted successfully');
+      setFilteredUsers(prevUsers => prevUsers.filter(user => user.id !== userId));
+      
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
+      toast.error('Failed to delete user: ' + (error.message || 'Unknown error'));
     }
   };
 
