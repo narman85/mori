@@ -13,6 +13,7 @@ import { ArrowLeft, MapPin } from 'lucide-react';
 import { StripePaymentForm } from '@/components/StripePaymentForm';
 import { createMockPaymentIntent, createStripePaymentIntent } from '@/utils/stripe-api';
 import { generateOAuthUserId, isOAuthUserId, isOAuthUser } from '@/utils/oauth-helpers';
+import { sendOrderConfirmationEmailJS } from '@/utils/email-service';
 
 interface ShippingInfo {
   firstName: string;
@@ -254,6 +255,37 @@ export const Checkout: React.FC = () => {
         }
       }
 
+      // Send order confirmation email
+      try {
+        const customerEmail = user?.email || shippingInfo.email;
+        const customerName = `${shippingInfo.firstName} ${shippingInfo.lastName}`;
+        
+        const emailData = {
+          customerEmail,
+          customerName,
+          orderId: order.id,
+          orderTotal: total,
+          orderItems: cart.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.sale_price && item.sale_price > 0 ? item.sale_price : item.price
+          })),
+          shippingAddress: shippingInfo
+        };
+
+        console.log('📧 Sending order confirmation email...');
+        const emailSent = await sendOrderConfirmationEmailJS(emailData);
+        
+        if (emailSent) {
+          toast.success('Order placed successfully! Confirmation email sent.');
+        } else {
+          toast.success('Order placed successfully! (Email notification failed)');
+        }
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
+        toast.success('Order placed successfully! (Email notification failed)');
+      }
+
       // Clear cart and redirect to success page
       clearCart();
       navigate('/order-confirmation', { 
@@ -266,8 +298,6 @@ export const Checkout: React.FC = () => {
           }
         } 
       });
-
-      toast.success('Order placed successfully!');
     } catch (error) {
       console.error('Error creating order:', error);
       toast.error('Failed to create order: ' + (error.message || 'Unknown error'));
