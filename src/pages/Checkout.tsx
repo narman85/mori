@@ -72,8 +72,8 @@ export const Checkout: React.FC = () => {
       const total = getTotalPrice() + (getTotalPrice() > 50 ? 0 : 5);
       console.log('Creating payment intent for total:', total);
       
-      // Use real Stripe API
-      const paymentIntent = await createStripePaymentIntent(total);
+      // Use mock Stripe API for development/production without backend
+      const paymentIntent = await createMockPaymentIntent(total);
       console.log('Payment intent created:', paymentIntent.id);
       
       setClientSecret(paymentIntent.client_secret);
