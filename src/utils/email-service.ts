@@ -119,12 +119,20 @@ export const sendOrderConfirmationEmail = async (orderData: OrderEmailData): Pro
 // Using EmailJS for client-side email sending
 import emailjs from '@emailjs/browser';
 
-// Initialize EmailJS with public key
+// Initialize EmailJS with public key  
 const initEmailJS = () => {
   const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-  if (publicKey && publicKey !== 'demo_key') {
-    emailjs.init(publicKey);
-    console.log('✅ EmailJS initialized');
+  if (publicKey && publicKey !== 'demo_key' && publicKey !== 'YOUR_PUBLIC_KEY_HERE') {
+    try {
+      emailjs.init({
+        publicKey: publicKey,
+      });
+      console.log('✅ EmailJS initialized with key:', publicKey.substring(0, 5) + '...');
+    } catch (initError) {
+      console.error('❌ Failed to initialize EmailJS:', initError);
+    }
+  } else {
+    console.log('⚠️ EmailJS not initialized - no valid public key found');
   }
 };
 
@@ -191,17 +199,40 @@ export const sendOrderConfirmationEmailJS = async (orderData: OrderEmailData): P
     }
 
     // Send actual email if EmailJS is configured
+    console.log('📧 Attempting to send email via EmailJS...', {
+      serviceId,
+      templateId,
+      hasPublicKey: !!publicKey,
+      to: orderData.customerEmail
+    });
+
     const result = await emailjs.send(
       serviceId,
       templateId, 
-      templateParams,
-      publicKey
+      templateParams
     );
     
-    console.log('✅ Email sent via EmailJS:', result.text);
+    console.log('✅ Email sent via EmailJS:', result);
     return true;
-  } catch (error) {
-    console.error('❌ Error sending email via EmailJS:', error);
+  } catch (error: any) {
+    console.error('❌ Error sending email via EmailJS:', {
+      error,
+      message: error?.text || error?.message || 'Unknown error',
+      status: error?.status,
+      serviceId,
+      templateId
+    });
+    
+    // Show detailed error for debugging
+    if (error?.status === 400) {
+      console.error('⚠️ EmailJS 400 Error - Possible causes:', 
+        '\n1. Service ID not found or incorrect',
+        '\n2. Template ID not found or incorrect', 
+        '\n3. Template variables mismatch',
+        '\n4. Public key not valid',
+        '\nCheck EmailJS dashboard configuration');
+    }
+    
     return false;
   }
 };
