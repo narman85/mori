@@ -2,7 +2,6 @@ import React, { createContext, useContext } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 
 // Load Stripe
-console.log('🔑 STRIPE_PUBLISHABLE_KEY:', import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface StripeContextType {
