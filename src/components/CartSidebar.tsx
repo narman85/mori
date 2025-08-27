@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
+import { pb } from '@/integrations/supabase/client';
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -12,6 +13,64 @@ interface CartSidebarProps {
 export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const navigate = useNavigate();
+
+  // Function to get proper image URL for cart items
+  const getCartItemImage = (item: any) => {
+    // Check if we have PocketBase image array
+    if (item.image && item.image.length > 0) {
+      const firstImage = item.image[0];
+      
+      // If it's Imgur URL or other external URL, return directly
+      if (firstImage.startsWith('http')) {
+        return firstImage;
+      }
+      
+      // If it's base64, return directly
+      if (firstImage.startsWith('data:')) {
+        return firstImage;
+      }
+      
+      // Otherwise it's a PocketBase filename - build proper URL
+      try {
+        // Create proper record object for pb.files.getURL
+        const record = {
+          id: item.id,
+          collectionId: 'az4zftchp7yppc0', // products collection ID
+          collectionName: 'products',
+          image: item.image
+        };
+        
+        // Use PocketBase built-in method to generate correct URL
+        const imageUrl = pb.files.getURL(record, firstImage);
+        console.log('🛒 Cart image URL generated via pb.files.getURL:', imageUrl);
+        return imageUrl;
+      } catch (error) {
+        console.error('CartSidebar - Error generating image URL with pb.files.getURL:', error);
+        
+        // Fallback to manual URL construction
+        try {
+          const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+          const baseUrl = isProd 
+            ? 'https://mori-tea.pockethost.io' 
+            : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
+          
+          const fallbackUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${item.id}/${firstImage}`;
+          console.log('🛒 Cart image fallback URL:', fallbackUrl);
+          return fallbackUrl;
+        } catch (fallbackError) {
+          console.error('CartSidebar - Fallback URL generation failed:', fallbackError);
+        }
+      }
+    }
+    
+    // Fallback to images array if no PocketBase image
+    if (item.images && item.images.length > 0) {
+      return item.images[0];
+    }
+    
+    // Default fallback
+    return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop&crop=center';
+  };
 
   return (
     <>
@@ -61,9 +120,9 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => 
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
                     {/* Product Image */}
-                    <div className="w-16 h-16 flex-shrink-0">
+                    <div className="w-20 h-20 flex-shrink-0">
                       <img
-                        src={item.images[0]}
+                        src={getCartItemImage(item)}
                         alt={item.name}
                         className="w-full h-full object-cover rounded"
                       />
