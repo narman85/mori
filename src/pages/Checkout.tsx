@@ -12,7 +12,7 @@ import { pb } from '@/integrations/supabase/client';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { StripePaymentForm } from '@/components/StripePaymentForm';
 import { createMockPaymentIntent, createStripePaymentIntent } from '@/utils/stripe-api';
-import { generateOAuthUserId, isOAuthUserId } from '@/utils/oauth-helpers';
+import { generateOAuthUserId, isOAuthUserId, isOAuthUser } from '@/utils/oauth-helpers';
 
 interface ShippingInfo {
   firstName: string;
@@ -78,25 +78,25 @@ export const Checkout: React.FC = () => {
       let isOAuthUserFlag = false;
       let oauthUserId = null;
       
+      const userIsOAuth = isOAuthUser(user);
       console.log('🔍 Checkout: Current user info:', {
         id: user?.id,
         email: user?.email,
         name: user?.name,
-        isOAuth: user?.id ? isOAuthUserId(user.id) : false
+        username: user?.username,
+        isOAuth: userIsOAuth,
+        oldMethod: user?.id ? isOAuthUserId(user.id) : false
       });
       
       if (user?.id) {
-        if (isOAuthUserId(user.id)) {
-          console.log('🔍 OAuth user detected, will create guest order with user info');
+        // All authenticated users (OAuth and regular) get their user ID linked to orders
+        actualUserId = user.id;
+        console.log('✅ Using user ID for order:', actualUserId);
+        
+        // For OAuth users, also store email as backup in guest_email field
+        if (userIsOAuth) {
           isOAuthUserFlag = true;
-          actualUserId = null; // Don't link to user ID for OAuth users
-          // Generate consistent OAuth user ID from email
-          oauthUserId = generateOAuthUserId(user.email);
-          console.log('📝 Generated OAuth user ID:', oauthUserId);
-        } else {
-          // Regular registered user - use their ID directly
-          actualUserId = user.id;
-          console.log('✅ Using regular user ID for order:', actualUserId);
+          console.log('📝 OAuth user detected, will also store email as backup');
         }
       }
 
@@ -320,25 +320,25 @@ export const Checkout: React.FC = () => {
       let isOAuthUserFlag = false;
       let oauthUserId = null;
       
+      const userIsOAuth = isOAuthUser(user);
       console.log('🔍 Checkout: Current user info:', {
         id: user?.id,
         email: user?.email,
         name: user?.name,
-        isOAuth: user?.id ? isOAuthUserId(user.id) : false
+        username: user?.username,
+        isOAuth: userIsOAuth,
+        oldMethod: user?.id ? isOAuthUserId(user.id) : false
       });
       
       if (user?.id) {
-        if (isOAuthUserId(user.id)) {
-          console.log('🔍 OAuth user detected, will create guest order with user info');
+        // All authenticated users (OAuth and regular) get their user ID linked to orders
+        actualUserId = user.id;
+        console.log('✅ Using user ID for order:', actualUserId);
+        
+        // For OAuth users, also store email as backup in guest_email field
+        if (userIsOAuth) {
           isOAuthUserFlag = true;
-          actualUserId = null; // Don't link to user ID for OAuth users
-          // Generate consistent OAuth user ID from email
-          oauthUserId = generateOAuthUserId(user.email);
-          console.log('📝 Generated OAuth user ID:', oauthUserId);
-        } else {
-          // Regular registered user - use their ID directly
-          actualUserId = user.id;
-          console.log('✅ Using regular user ID for order:', actualUserId);
+          console.log('📝 OAuth user detected, will also store email as backup');
         }
       }
 

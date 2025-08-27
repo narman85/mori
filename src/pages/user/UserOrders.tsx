@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { pb } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Package, Eye, Calendar, CreditCard, Truck, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { generateOAuthUserId, isOAuthUserId } from '@/utils/oauth-helpers';
+import { generateOAuthUserId, isOAuthUserId, isOAuthUser } from '@/utils/oauth-helpers';
 
 interface Order {
   id: string;
@@ -75,15 +75,18 @@ const UserOrders = () => {
       // Build filter query to include OAuth orders using consistent OAuth ID
       let filterQuery;
       
-      // If this is an OAuth user, search only by email for now (until oauth_user_id field is added)
-      if (isOAuthUserId(user.id)) {
-        filterQuery = `guest_email = "${user.email}"`;
-        console.log('🔍 UserOrders: OAuth user, searching by email only:', user.email);
-      } else {
-        // Regular user - search by user ID and also check guest orders with same email
-        filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
-        console.log('🔍 UserOrders: Regular user, searching by ID and email');
-      }
+      const userIsOAuth = isOAuthUser(user);
+      console.log('🔍 UserOrders: Current user info:', {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        isOAuth: userIsOAuth,
+        oldMethod: isOAuthUserId(user.id)
+      });
+      
+      // All users (OAuth and regular) search by both user ID and email
+      filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
+      console.log('🔍 UserOrders: Searching by user ID and email:', user.id, user.email);
       
       console.log('🔍 UserOrders: Fetching orders with filter:', filterQuery);
       

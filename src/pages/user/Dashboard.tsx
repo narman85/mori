@@ -16,7 +16,7 @@ import {
   Eye
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { generateOAuthUserId, isOAuthUserId } from '@/utils/oauth-helpers';
+import { generateOAuthUserId, isOAuthUserId, isOAuthUser } from '@/utils/oauth-helpers';
 
 interface OrderStats {
   total: number;
@@ -54,20 +54,23 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
+      const userIsOAuth = isOAuthUser(user);
       console.log('🔍 Dashboard: Current user info:', {
         id: user.id,
         email: user.email,
         name: user.name,
-        isOAuth: isOAuthUserId(user.id)
+        username: user.username,
+        isOAuth: userIsOAuth,
+        oldMethod: isOAuthUserId(user.id)
       });
       
       // Fetch all orders for statistics - including OAuth orders using consistent OAuth ID
       let filterQuery;
       
-      // If this is an OAuth user, search only by email for now (until oauth_user_id field is added)
-      if (isOAuthUserId(user.id)) {
-        filterQuery = `guest_email = "${user.email}"`;
-        console.log('🔍 Dashboard: OAuth user, searching by email only:', user.email);
+      // If this is an OAuth user, search by both user ID and email (covers all cases)
+      if (userIsOAuth) {
+        filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
+        console.log('🔍 Dashboard: OAuth user, searching by user ID and email:', user.id, user.email);
       } else {
         // Regular user - search by user ID and also check guest orders with same email
         filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
