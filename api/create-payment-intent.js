@@ -1,9 +1,14 @@
 // Backend API for creating real Stripe payment intents
-import Stripe from 'stripe';
+const Stripe = require('stripe');
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+let stripe;
+try {
+  stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+} catch (error) {
+  console.error('Failed to initialize Stripe:', error);
+}
 
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -24,6 +29,11 @@ export default async function handler(req, res) {
     if (!process.env.STRIPE_SECRET_KEY) {
       console.error('STRIPE_SECRET_KEY not found in environment');
       return res.status(500).json({ error: 'Stripe not configured' });
+    }
+
+    if (!stripe) {
+      console.error('Stripe not initialized');
+      return res.status(500).json({ error: 'Stripe initialization failed' });
     }
 
     const { amount, currency = 'eur' } = req.body;
