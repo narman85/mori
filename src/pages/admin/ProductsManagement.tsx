@@ -229,7 +229,7 @@ const ProductsManagement = () => {
       }
       
       try {
-        let processedRecord = { ...e.record } as Product;
+        const processedRecord = { ...e.record } as Product;
         
         // Ensure stock is a proper number in real-time updates
         if (processedRecord.stock !== undefined && processedRecord.stock !== null) {

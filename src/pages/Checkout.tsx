@@ -77,7 +77,7 @@ export const Checkout: React.FC = () => {
       // Handle OAuth users - don't use user ID for orders if OAuth
       let actualUserId = null;
       let isOAuthUserFlag = false;
-      let oauthUserId = null;
+      const oauthUserId = null;
       
       const userIsOAuth = isOAuthUser(user);
       console.log('🔍 Checkout: Current user info:', {
@@ -315,14 +315,19 @@ export const Checkout: React.FC = () => {
       setClientSecret('');
       
       const total = getTotalPrice() + (getTotalPrice() > 50 ? 0 : 5);
-      console.log('Creating payment intent for total:', total);
+      console.log('Creating real Stripe payment intent for total:', total);
       
-      // Skip payment for demo - directly create order
-      console.log('Skipping payment step for demo - creating order directly');
-      await handleOrderCreation();
+      // Create real Stripe payment intent
+      const paymentIntent = await createStripePaymentIntent(total);
+      console.log('Payment intent created:', paymentIntent);
+      
+      setClientSecret(paymentIntent.client_secret);
+      setCurrentStep('payment');
+      
+      toast.success('Payment form ready');
     } catch (error) {
       console.error('Error creating payment intent:', error);
-      toast.error('Failed to initialize payment: ' + (error.message || 'Unknown error'));
+      toast.error('Failed to initialize payment: ' + (error?.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -358,7 +363,7 @@ export const Checkout: React.FC = () => {
       // Handle OAuth users - don't use user ID for orders if OAuth
       let actualUserId = null;
       let isOAuthUserFlag = false;
-      let oauthUserId = null;
+      const oauthUserId = null;
       
       const userIsOAuth = isOAuthUser(user);
       console.log('🔍 Checkout: Current user info:', {

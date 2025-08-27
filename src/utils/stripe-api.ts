@@ -1,5 +1,5 @@
-// Real Stripe API integration  
-const API_BASE = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+// Real Stripe API integration via dedicated Stripe server
+const API_BASE = 'http://localhost:3002';
 const STRIPE_API_BASE = 'https://api.stripe.com/v1';
 
 interface PaymentIntentResponse {
@@ -17,7 +17,7 @@ export async function createStripePaymentIntent(
 ): Promise<PaymentIntentResponse> {
   
   try {
-    const response = await fetch(`${API_BASE}/create-payment-intent`, {
+    const response = await fetch(`${API_BASE}/api/create-payment-intent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
