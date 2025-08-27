@@ -62,6 +62,120 @@ export const Checkout: React.FC = () => {
     }));
   };
 
+  // Create order directly (demo mode)
+  const handleOrderCreation = async () => {
+    try {
+      setLoading(true);
+      
+      // Create order in PocketBase
+      const subtotal = getTotalPrice();
+      const shipping = subtotal > 50 ? 0 : 5;
+      const total = subtotal + shipping;
+
+      // Check if this is an OAuth user and get real database ID
+      let actualUserId = user?.id;
+      
+      if (user?.id && (user.id.startsWith('oauth-') || user.id.startsWith('temp-'))) {
+        console.log('🔍 OAuth user detected, finding real database ID for order...');
+        try {
+          const realUsers = await pb.collection('users').getFullList({
+            filter: `email = "${user.email}"`
+          });
+          if (realUsers && realUsers.length > 0) {
+            actualUserId = realUsers[0].id;
+            console.log('✅ Found real user ID in database:', actualUserId);
+          } else {
+            console.log('⚠️ Real user not found in database, using OAuth session');
+          }
+        } catch (error) {
+          console.log('⚠️ Could not search for real user:', error);
+        }
+      }
+
+      const orderData = {
+        ...(actualUserId ? { user: actualUserId } : {}), // Only use real database ID
+        total_price: total,
+        status: 'pending', // Start as pending
+        shipping_address: shippingInfo,
+        // For guest users only
+        ...(!user && {
+          guest_email: shippingInfo.email,
+          guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+          guest_phone: shippingInfo.phone
+        })
+      };
+
+      console.log('Creating order with data:', orderData);
+      
+      // For guest users, use public API
+      let order;
+      if (!user) {
+        // Guest checkout
+        const response = await fetch(`${import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090'}/api/public/orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderData)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create order');
+        }
+        
+        order = await response.json();
+      } else {
+        // Authenticated user
+        order = await pb.collection('orders').create(orderData);
+      }
+
+      // Create order items
+      for (const item of cart) {
+        const orderItemData = {
+          order: order.id,
+          product: item.id,
+          quantity: item.quantity,
+          price: item.sale_price && item.sale_price > 0 ? item.sale_price : item.price
+        };
+        
+        if (!user) {
+          // Guest order item
+          await fetch(`${import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090'}/api/public/order-items`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(orderItemData)
+          });
+        } else {
+          // Authenticated order item
+          await pb.collection('order_items').create(orderItemData);
+        }
+      }
+
+      // Clear cart and redirect to success page
+      clearCart();
+      navigate('/order-confirmation', { 
+        state: { 
+          orderId: order.id,
+          orderDetails: {
+            ...shippingInfo,
+            total: total,
+            items: cart
+          }
+        } 
+      });
+
+      toast.success('Order placed successfully!');
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast.error('Failed to create order: ' + (error.message || 'Unknown error'));
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Create payment intent and move to payment step
   const proceedToPayment = async () => {
     try {
