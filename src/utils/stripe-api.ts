@@ -1,5 +1,9 @@
-// Real Stripe API integration via dedicated Stripe server
-const API_BASE = 'http://localhost:3002';
+// Real Stripe API integration via Vercel serverless functions
+const API_BASE = import.meta.env.VITE_STRIPE_SERVER_URL || (
+  typeof window !== 'undefined' && window.location.origin.includes('vercel.app') 
+    ? window.location.origin 
+    : 'http://localhost:3002'
+);
 const STRIPE_API_BASE = 'https://api.stripe.com/v1';
 
 interface PaymentIntentResponse {

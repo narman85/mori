@@ -13,7 +13,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_your_stripe_
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:8081', 'http://localhost:5173'],
+  origin: [
+    'http://localhost:8080', 
+    'http://localhost:8081', 
+    'http://localhost:5173',
+    'https://mori-sigma.vercel.app',
+    'https://*.vercel.app'
+  ],
   credentials: true
 }));
 app.use(express.json());
