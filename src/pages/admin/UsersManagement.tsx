@@ -39,7 +39,7 @@ interface UserStats {
 
 interface Order {
   id: string;
-  user: string;
+  user?: string;
   total_price: number;
   status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   shipping_address: {
@@ -52,11 +52,29 @@ interface Order {
     postalCode: string;
     country: string;
   };
+  guest_email?: string;
+  guest_name?: string;
   created: string;
   updated: string;
 }
 
+interface OAuthUser {
+  id: string;
+  email: string;
+  name: string;
+  oauth_provider?: string;
+  created: string;
+  isOAuth: true;
+}
+
 interface UserWithOrders extends User {
+  orders?: Order[];
+  totalOrders?: number;
+  totalSpent?: number;
+  isOAuth?: boolean;
+}
+
+interface OAuthUserWithOrders extends OAuthUser {
   orders?: Order[];
   totalOrders?: number;
   totalSpent?: number;
@@ -113,28 +131,60 @@ const UsersManagement = () => {
       setLoading(true);
       console.log('🔄 Fetching users...');
       
+      // Fetch regular registered users
       const records = await pb.collection('users').getFullList<User>({
         sort: '-created'
       });
       
-      console.log('✅ Users fetched:', records.length);
-      records.forEach((user, index) => {
-        console.log(`User ${index + 1}:`, {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          name: user.name,
-          verified: user.verified
-        });
+      console.log('✅ Regular users fetched:', records.length);
+      
+      // Fetch all orders to find OAuth users from guest orders
+      console.log('🔄 Fetching all orders to find OAuth users...');
+      const allOrders = await pb.collection('orders').getFullList<Order>({
+        filter: 'guest_email != ""',
+        sort: '-created'
       });
+      
+      // Extract unique OAuth users from orders
+      const oauthUserEmails = new Set<string>();
+      const oauthUsersMap = new Map<string, OAuthUserWithOrders>();
+      
+      allOrders.forEach(order => {
+        if (order.guest_email && !oauthUserEmails.has(order.guest_email)) {
+          oauthUserEmails.add(order.guest_email);
+          
+          // Check if this email belongs to a registered user
+          const isRegisteredUser = records.some(user => user.email === order.guest_email);
+          
+          if (!isRegisteredUser) {
+            // This is a pure OAuth user
+            const oauthUser: OAuthUserWithOrders = {
+              id: `oauth-${order.guest_email.replace(/[^a-zA-Z0-9]/g, '_')}`, // Generate ID from email
+              email: order.guest_email,
+              name: order.guest_name || order.shipping_address?.firstName + ' ' + order.shipping_address?.lastName || 'OAuth User',
+              oauth_provider: 'google', // Assume Google for now
+              created: order.created,
+              isOAuth: true,
+              orders: [],
+              totalOrders: 0,
+              totalSpent: 0
+            };
+            
+            oauthUsersMap.set(order.guest_email, oauthUser);
+          }
+        }
+      });
+      
+      console.log(`✅ Found ${oauthUsersMap.size} OAuth users`);
 
-      // Fetch orders for each user to get order count and total spent
-      console.log('🔄 Fetching orders for each user...');
+      // Fetch orders for regular users
+      console.log('🔄 Fetching orders for regular users...');
       const usersWithOrders = await Promise.all(
         records.map(async (user) => {
           try {
+            // Get orders for this user (both linked to user ID and guest orders with same email)
             const orders = await pb.collection('orders').getFullList<Order>({
-              filter: `user = "${user.id}"`,
+              filter: `(user = "${user.id}" || guest_email = "${user.email}")`,
               sort: '-created'
             });
             
@@ -146,7 +196,8 @@ const UsersManagement = () => {
               ...user,
               orders,
               totalOrders: orders.length,
-              totalSpent
+              totalSpent,
+              isOAuth: false
             };
           } catch (error) {
             console.error(`❌ Error fetching orders for user ${user.id}:`, error);
@@ -154,23 +205,62 @@ const UsersManagement = () => {
               ...user,
               orders: [],
               totalOrders: 0,
-              totalSpent: 0
+              totalSpent: 0,
+              isOAuth: false
             };
           }
         })
       );
 
-      setUsers(usersWithOrders);
+      // Fetch orders for OAuth users
+      console.log('🔄 Fetching orders for OAuth users...');
+      for (const [email, oauthUser] of oauthUsersMap.entries()) {
+        try {
+          const orders = await pb.collection('orders').getFullList<Order>({
+            filter: `guest_email = "${email}"`,
+            sort: '-created'
+          });
+          
+          const totalSpent = orders.reduce((sum, order) => sum + order.total_price, 0);
+          
+          oauthUser.orders = orders;
+          oauthUser.totalOrders = orders.length;
+          oauthUser.totalSpent = totalSpent;
+          
+          console.log(`📊 OAuth User ${email}: ${orders.length} orders, €${totalSpent.toFixed(2)}`);
+        } catch (error) {
+          console.error(`❌ Error fetching orders for OAuth user ${email}:`, error);
+        }
+      }
+
+      // Combine regular users and OAuth users
+      const combinedUsers = [
+        ...usersWithOrders,
+        ...Array.from(oauthUsersMap.values()).map(oauthUser => ({
+          ...oauthUser,
+          username: oauthUser.email,
+          avatar: undefined,
+          updated: oauthUser.created,
+          verified: true, // OAuth users are considered verified
+          emailVisibility: true,
+          collectionId: 'oauth',
+          collectionName: 'oauth_users'
+        } as UserWithOrders))
+      ];
+
+      setUsers(combinedUsers);
       
-      // Calculate stats
+      // Calculate stats including OAuth users
       const now = new Date();
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       
       const stats = {
-        totalUsers: records.length,
-        verifiedUsers: records.filter(user => user.verified).length,
-        recentUsers: records.filter(user => new Date(user.created) > oneWeekAgo).length
+        totalUsers: combinedUsers.length,
+        verifiedUsers: combinedUsers.filter(user => user.verified || user.isOAuth).length,
+        recentUsers: combinedUsers.filter(user => new Date(user.created) > oneWeekAgo).length
       };
+      
+      console.log(`📊 Total users: ${stats.totalUsers} (${records.length} registered + ${oauthUsersMap.size} OAuth)`);
       
       setStats(stats);
       console.log('✅ Users management loaded successfully');
@@ -350,11 +440,18 @@ const UsersManagement = () => {
                           </div>
                         </div>
                         <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">
-                            {user.name || user.username || 'No name'}
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium text-gray-900">
+                              {user.name || user.username || 'No name'}
+                            </div>
+                            {user.isOAuth && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                OAuth
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-gray-500">
-                            @{user.username}
+                            {user.isOAuth ? user.email : `@${user.username}`}
                           </div>
                         </div>
                       </div>
