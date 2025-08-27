@@ -174,6 +174,61 @@ export const Checkout: React.FC = () => {
         }
       }
 
+      // Update product stock after successful order
+      console.log('🔄 Updating product stock...');
+      for (const item of cart) {
+        try {
+          // Get current product data to check current stock
+          const currentProduct = await pb.collection('products').getOne(item.id);
+          const newStock = Math.max(0, (currentProduct.stock || 0) - item.quantity);
+          
+          console.log(`📦 Product ${item.name}: ${currentProduct.stock} → ${newStock} (sold ${item.quantity})`);
+          
+          // Update stock
+          await pb.collection('products').update(item.id, {
+            stock: newStock,
+            in_stock: newStock > 0
+          });
+          
+        } catch (stockError) {
+          console.error(`⚠️ Failed to update stock for product ${item.id}:`, stockError);
+          
+          // Try direct API call if PocketBase auth fails
+          try {
+            const currentProduct = await fetch(`${import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090'}/api/collections/products/records/${item.id}`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              }
+            });
+            
+            if (currentProduct.ok) {
+              const productData = await currentProduct.json();
+              const newStock = Math.max(0, (productData.stock || 0) - item.quantity);
+              
+              const updateResponse = await fetch(`${import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090'}/api/collections/products/records/${item.id}`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  stock: newStock,
+                  in_stock: newStock > 0
+                })
+              });
+              
+              if (updateResponse.ok) {
+                console.log(`✅ Stock updated via API for ${item.name}: ${newStock}`);
+              } else {
+                console.error(`❌ Failed to update stock via API for ${item.name}`);
+              }
+            }
+          } catch (apiError) {
+            console.error(`❌ API stock update failed for ${item.name}:`, apiError);
+          }
+        }
+      }
+
       // Clear cart and redirect to success page
       clearCart();
       navigate('/order-confirmation', { 
