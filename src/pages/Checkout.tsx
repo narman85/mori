@@ -115,8 +115,8 @@ export const Checkout: React.FC = () => {
         ...(isOAuthUserFlag && {
           guest_email: user.email,
           guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
-          guest_phone: shippingInfo.phone,
-          oauth_user_id: oauthUserId // Store consistent OAuth ID for reference
+          guest_phone: shippingInfo.phone
+          // oauth_user_id: oauthUserId // Will add this field later when PocketBase schema updated
         }),
         // For guest users (no login)
         ...(!user && {
@@ -363,8 +363,8 @@ export const Checkout: React.FC = () => {
         ...(isOAuthUserFlag && {
           guest_email: user.email,
           guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
-          guest_phone: shippingInfo.phone,
-          oauth_user_id: oauthUserId // Store consistent OAuth ID for reference
+          guest_phone: shippingInfo.phone
+          // oauth_user_id: oauthUserId // Will add this field later when PocketBase schema updated
         }),
         // For guest users (no login)
         ...(!user && {

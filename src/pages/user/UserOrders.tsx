@@ -75,11 +75,10 @@ const UserOrders = () => {
       // Build filter query to include OAuth orders using consistent OAuth ID
       let filterQuery;
       
-      // If this is an OAuth user, search by email and consistent OAuth ID
+      // If this is an OAuth user, search only by email for now (until oauth_user_id field is added)
       if (isOAuthUserId(user.id)) {
-        const oauthUserId = generateOAuthUserId(user.email);
-        filterQuery = `(guest_email = "${user.email}" || oauth_user_id = "${oauthUserId}")`;
-        console.log('🔍 UserOrders: OAuth user, searching by email and OAuth ID:', user.email, oauthUserId);
+        filterQuery = `guest_email = "${user.email}"`;
+        console.log('🔍 UserOrders: OAuth user, searching by email only:', user.email);
       } else {
         // Regular user - search by user ID and also check guest orders with same email
         filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
