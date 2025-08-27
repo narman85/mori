@@ -119,28 +119,34 @@ export const sendOrderConfirmationEmail = async (orderData: OrderEmailData): Pro
 // Using EmailJS for client-side email sending
 import emailjs from '@emailjs/browser';
 
-// Initialize EmailJS with public key  
-const initEmailJS = () => {
+// Initialize EmailJS with public key when first email is sent
+let isEmailJSInitialized = false;
+
+const ensureEmailJSInitialized = () => {
+  if (isEmailJSInitialized) return true;
+  
   const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-  if (publicKey && publicKey !== 'demo_key' && publicKey !== 'YOUR_PUBLIC_KEY_HERE') {
-    try {
-      emailjs.init({
-        publicKey: publicKey,
-      });
-      console.log('✅ EmailJS initialized with key:', publicKey.substring(0, 5) + '...');
-    } catch (initError) {
-      console.error('❌ Failed to initialize EmailJS:', initError);
-    }
-  } else {
+  if (!publicKey || publicKey === 'demo_key' || publicKey === 'YOUR_PUBLIC_KEY_HERE') {
     console.log('⚠️ EmailJS not initialized - no valid public key found');
+    return false;
+  }
+  
+  try {
+    emailjs.init(publicKey);
+    isEmailJSInitialized = true;
+    console.log('✅ EmailJS initialized with key:', publicKey.substring(0, 5) + '...');
+    return true;
+  } catch (initError) {
+    console.error('❌ Failed to initialize EmailJS:', initError);
+    return false;
   }
 };
 
-// Initialize on module load
-initEmailJS();
-
 export const sendOrderConfirmationEmailJS = async (orderData: OrderEmailData): Promise<boolean> => {
   try {
+    // Ensure EmailJS is initialized
+    ensureEmailJSInitialized();
+    
     // Get EmailJS configuration from environment variables
     const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID || 'service_demo';
     const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID || 'template_demo';
@@ -206,11 +212,21 @@ export const sendOrderConfirmationEmailJS = async (orderData: OrderEmailData): P
       to: orderData.customerEmail
     });
 
+    // Check if EmailJS is properly loaded
+    if (!emailjs || !emailjs.send) {
+      console.error('❌ EmailJS library not properly loaded');
+      return false;
+    }
+
+    // Send email with proper error handling
     const result = await emailjs.send(
       serviceId,
       templateId, 
       templateParams
-    );
+    ).catch((sendError) => {
+      console.error('❌ EmailJS send failed:', sendError);
+      throw sendError;
+    });
     
     console.log('✅ Email sent via EmailJS:', result);
     return true;
