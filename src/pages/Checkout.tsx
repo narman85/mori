@@ -89,14 +89,15 @@ export const Checkout: React.FC = () => {
       });
       
       if (user?.id) {
-        // All authenticated users (OAuth and regular) get their user ID linked to orders
-        actualUserId = user.id;
-        console.log('✅ Using user ID for order:', actualUserId);
-        
-        // For OAuth users, also store email as backup in guest_email field
         if (userIsOAuth) {
+          // OAuth users - don't link user ID, treat as guest with user info
+          console.log('🔍 OAuth user detected, creating guest order with user info');
           isOAuthUserFlag = true;
-          console.log('📝 OAuth user detected, will also store email as backup');
+          actualUserId = null; // Don't link user ID for OAuth users since they're not in users table
+        } else {
+          // Regular registered users - use their ID
+          actualUserId = user.id;
+          console.log('✅ Using regular user ID for order:', actualUserId);
         }
       }
 
@@ -331,14 +332,15 @@ export const Checkout: React.FC = () => {
       });
       
       if (user?.id) {
-        // All authenticated users (OAuth and regular) get their user ID linked to orders
-        actualUserId = user.id;
-        console.log('✅ Using user ID for order:', actualUserId);
-        
-        // For OAuth users, also store email as backup in guest_email field
         if (userIsOAuth) {
+          // OAuth users - don't link user ID, treat as guest with user info
+          console.log('🔍 OAuth user detected, creating guest order with user info');
           isOAuthUserFlag = true;
-          console.log('📝 OAuth user detected, will also store email as backup');
+          actualUserId = null; // Don't link user ID for OAuth users since they're not in users table
+        } else {
+          // Regular registered users - use their ID
+          actualUserId = user.id;
+          console.log('✅ Using regular user ID for order:', actualUserId);
         }
       }
 
