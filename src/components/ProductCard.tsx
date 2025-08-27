@@ -121,8 +121,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       
       // Otherwise it's a PocketBase filename - build proper URL
       try {
+        // Create proper record object for pb.files.getURL
+        const record = {
+          id: product.id,
+          collectionId: 'az4zftchp7yppc0', // products collection ID
+          collectionName: 'products',
+          // Add any other necessary fields
+          image: product.image
+        };
+        
         // Use PocketBase built-in method to generate correct URL
-        const imageUrl = pb.files.getURL(product, firstImage);
+        const imageUrl = pb.files.getURL(record, firstImage);
         console.log('🖼️ Main image URL generated via pb.files.getURL:', imageUrl);
         return imageUrl;
       } catch (error) {
@@ -168,8 +177,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       
       // Otherwise it's a PocketBase filename - build proper URL
       try {
+        // Create proper record object for pb.files.getURL
+        const record = {
+          id: product.id,
+          collectionId: 'az4zftchp7yppc0', // products collection ID
+          collectionName: 'products',
+          hover_image: product.hover_image
+        };
+        
         // Use PocketBase built-in method to generate correct URL
-        const imageUrl = pb.files.getURL(product, product.hover_image);
+        const imageUrl = pb.files.getURL(record, product.hover_image);
         console.log('🖼️ Hover image URL generated via pb.files.getURL:', imageUrl);
         return imageUrl;
       } catch (error) {
@@ -207,8 +224,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       
       // Otherwise it's a PocketBase filename - build proper URL
       try {
+        // Create proper record object for pb.files.getURL
+        const record = {
+          id: product.id,
+          collectionId: 'az4zftchp7yppc0', // products collection ID
+          collectionName: 'products',
+          image: product.image
+        };
+        
         // Use PocketBase built-in method to generate correct URL
-        const imageUrl = pb.files.getURL(product, secondImage);
+        const imageUrl = pb.files.getURL(record, secondImage);
         console.log('🖼️ Second image URL generated via pb.files.getURL:', imageUrl);
         return imageUrl;
       } catch (error) {

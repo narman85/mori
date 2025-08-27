@@ -251,8 +251,16 @@ const ProductDetail = () => {
       
       // Otherwise it's a PocketBase filename - build proper URL
       try {
+        // Create proper record object for pb.files.getURL
+        const record = {
+          id: product.id,
+          collectionId: 'az4zftchp7yppc0', // products collection ID
+          collectionName: 'products',
+          image: product.image
+        };
+        
         // Use PocketBase built-in method to generate correct URL
-        const imageUrl = pb.files.getURL(product, img);
+        const imageUrl = pb.files.getURL(record, img);
         console.log('🖼️ ProductDetail image URL generated via pb.files.getURL:', imageUrl);
         return imageUrl;
       } catch (error) {
