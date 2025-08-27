@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pb } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { generateOAuthUserId } from '@/utils/oauth-helpers';
 import { 
   Users, 
   Mail, 
@@ -159,7 +160,7 @@ const UsersManagement = () => {
           if (!isRegisteredUser) {
             // This is a pure OAuth user
             const oauthUser: OAuthUserWithOrders = {
-              id: `oauth-${order.guest_email.replace(/[^a-zA-Z0-9]/g, '_')}`, // Generate ID from email
+              id: generateOAuthUserId(order.guest_email), // Use consistent ID generation
               email: order.guest_email,
               name: order.guest_name || order.shipping_address?.firstName + ' ' + order.shipping_address?.lastName || 'OAuth User',
               oauth_provider: 'google', // Assume Google for now

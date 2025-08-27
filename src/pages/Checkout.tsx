@@ -12,6 +12,7 @@ import { pb } from '@/integrations/supabase/client';
 import { ArrowLeft, MapPin } from 'lucide-react';
 import { StripePaymentForm } from '@/components/StripePaymentForm';
 import { createMockPaymentIntent, createStripePaymentIntent } from '@/utils/stripe-api';
+import { generateOAuthUserId, isOAuthUserId } from '@/utils/oauth-helpers';
 
 interface ShippingInfo {
   firstName: string;
@@ -74,13 +75,17 @@ export const Checkout: React.FC = () => {
 
       // Handle OAuth users - don't use user ID for orders if OAuth
       let actualUserId = null;
-      let isOAuthUser = false;
+      let isOAuthUserFlag = false;
+      let oauthUserId = null;
       
       if (user?.id) {
-        if (user.id.startsWith('oauth-') || user.id.startsWith('temp-') || user.id.startsWith('google-')) {
+        if (isOAuthUserId(user.id)) {
           console.log('🔍 OAuth user detected, will create guest order with user info');
-          isOAuthUser = true;
+          isOAuthUserFlag = true;
           actualUserId = null; // Don't link to user ID for OAuth users
+          // Generate consistent OAuth user ID from email
+          oauthUserId = generateOAuthUserId(user.email);
+          console.log('📝 Generated OAuth user ID:', oauthUserId);
         } else {
           // Regular registered user - try to use their ID
           try {
@@ -107,11 +112,11 @@ export const Checkout: React.FC = () => {
         status: 'pending',
         shipping_address: shippingInfo,
         // For OAuth users, store their info like guest users
-        ...(isOAuthUser && {
+        ...(isOAuthUserFlag && {
           guest_email: user.email,
           guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
           guest_phone: shippingInfo.phone,
-          oauth_user_id: user.id // Store OAuth ID for reference
+          oauth_user_id: oauthUserId // Store consistent OAuth ID for reference
         }),
         // For guest users (no login)
         ...(!user && {
@@ -316,23 +321,36 @@ export const Checkout: React.FC = () => {
       const shipping = subtotal > 50 ? 0 : 5;
       const total = subtotal + shipping;
 
-      // Check if this is an OAuth user and get real database ID
-      let actualUserId = user?.id;
+      // Handle OAuth users - don't use user ID for orders if OAuth
+      let actualUserId = null;
+      let isOAuthUserFlag = false;
+      let oauthUserId = null;
       
-      if (user?.id && (user.id.startsWith('oauth-') || user.id.startsWith('temp-'))) {
-        console.log('🔍 OAuth user detected, finding real database ID for order...');
-        try {
-          const realUsers = await pb.collection('users').getFullList({
-            filter: `email = "${user.email}"`
-          });
-          if (realUsers && realUsers.length > 0) {
-            actualUserId = realUsers[0].id;
-            console.log('✅ Found real user ID in database:', actualUserId);
-          } else {
-            console.log('⚠️ Real user not found in database, using OAuth session');
+      if (user?.id) {
+        if (isOAuthUserId(user.id)) {
+          console.log('🔍 OAuth user detected, will create guest order with user info');
+          isOAuthUserFlag = true;
+          actualUserId = null; // Don't link to user ID for OAuth users
+          // Generate consistent OAuth user ID from email
+          oauthUserId = generateOAuthUserId(user.email);
+          console.log('📝 Generated OAuth user ID:', oauthUserId);
+        } else {
+          // Regular registered user - try to use their ID
+          try {
+            const realUsers = await pb.collection('users').getFullList({
+              filter: `email = "${user.email}"`
+            });
+            if (realUsers && realUsers.length > 0) {
+              actualUserId = realUsers[0].id;
+              console.log('✅ Found real user ID in database:', actualUserId);
+            } else {
+              console.log('⚠️ Real user not found in database, treating as guest');
+              actualUserId = null;
+            }
+          } catch (error) {
+            console.log('⚠️ Could not search for real user:', error);
+            actualUserId = null;
           }
-        } catch (error) {
-          console.log('⚠️ Could not search for real user:', error);
         }
       }
 
@@ -341,7 +359,14 @@ export const Checkout: React.FC = () => {
         total_price: total,
         status: 'paid', // Mark as paid since payment succeeded
         shipping_address: shippingInfo,
-        // For guest users only
+        // For OAuth users, store their info like guest users
+        ...(isOAuthUserFlag && {
+          guest_email: user.email,
+          guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,
+          guest_phone: shippingInfo.phone,
+          oauth_user_id: oauthUserId // Store consistent OAuth ID for reference
+        }),
+        // For guest users (no login)
         ...(!user && {
           guest_email: shippingInfo.email,
           guest_name: `${shippingInfo.firstName} ${shippingInfo.lastName}`,

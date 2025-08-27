@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { pb } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { generateOAuthUserId, extractEmailFromOAuthId, isOAuthUserId } from '@/utils/oauth-helpers';
 import { 
   ArrowLeft,
   Mail, 
@@ -95,11 +96,9 @@ const UserDetail = () => {
       let orders: Order[] = [];
       
       // Check if this is an OAuth user ID
-      if (id?.startsWith('oauth-')) {
+      if (isOAuthUserId(id)) {
         console.log('🔍 OAuth user detected, extracting from orders...');
-        
-        // Extract email from OAuth ID - more robust approach
-        console.log('📧 Extracting email from OAuth ID:', id);
+        console.log('📧 OAuth ID:', id);
         
         // Try to find orders by searching all guest orders and matching by ID pattern
         const allGuestOrders = await pb.collection('orders').getFullList<Order>({
@@ -110,7 +109,8 @@ const UserDetail = () => {
         // Find orders that match this OAuth user by reconstructing the ID from email
         orders = allGuestOrders.filter(order => {
           if (!order.guest_email) return false;
-          const reconstructedId = `oauth-${order.guest_email.replace(/[^a-zA-Z0-9]/g, '_')}`;
+          const reconstructedId = generateOAuthUserId(order.guest_email);
+          console.log(`🔍 Comparing ${reconstructedId} with ${id}`);
           return reconstructedId === id;
         });
         
