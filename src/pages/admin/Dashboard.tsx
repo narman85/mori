@@ -203,6 +203,22 @@ const Dashboard = () => {
     }
   };
 
+  // Get customer email - either from user account or shipping address (for guest users)
+  const getCustomerEmail = (order: RecentOrder) => {
+    // If user is logged in and has an email, use that
+    if (order.expand?.user?.email) {
+      return order.expand.user.email;
+    }
+    
+    // For guest users, use the shipping address email
+    if (order.shipping_address?.email) {
+      return order.shipping_address.email;
+    }
+    
+    // Last fallback - always use shipping email as it's always recorded
+    return 'No email provided';
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -295,7 +311,7 @@ const Dashboard = () => {
                         </span>
                       </div>
                       <div className="text-sm text-gray-600">
-                        {order.expand?.user?.email || order.expand?.user?.name || 'Guest User'}
+                        {getCustomerEmail(order)}
                       </div>
                       <div className="text-xs text-gray-500">
                         {order.expand?.['order_items(order)']?.length || 0} items
