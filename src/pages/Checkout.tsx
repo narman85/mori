@@ -90,10 +90,19 @@ export const Checkout: React.FC = () => {
       
       if (user?.id) {
         if (userIsOAuth) {
-          // OAuth users - they are real PocketBase users now, use their ID
-          console.log('🔍 OAuth user detected (real PocketBase user), using user ID');
-          isOAuthUserFlag = true;
-          actualUserId = user.id; // Use real user ID for OAuth users
+          // OAuth users - check if they exist in PocketBase, if not treat as guest
+          console.log('🔍 OAuth user detected, checking if exists in PocketBase...');
+          try {
+            // Try to verify user exists by making a test API call
+            await pb.collection('_pb_users_auth_').getOne(user.id);
+            console.log('✅ OAuth user verified in PocketBase, using user ID:', user.id);
+            isOAuthUserFlag = true;
+            actualUserId = user.id; // Use real user ID for OAuth users
+          } catch (userCheckError) {
+            console.log('⚠️ OAuth user not found in PocketBase, treating as guest:', userCheckError);
+            isOAuthUserFlag = true;
+            actualUserId = null; // Treat as guest order
+          }
         } else {
           // Regular registered users - use their ID
           actualUserId = user.id;
@@ -333,10 +342,19 @@ export const Checkout: React.FC = () => {
       
       if (user?.id) {
         if (userIsOAuth) {
-          // OAuth users - they are real PocketBase users now, use their ID
-          console.log('🔍 OAuth user detected (real PocketBase user), using user ID');
-          isOAuthUserFlag = true;
-          actualUserId = user.id; // Use real user ID for OAuth users
+          // OAuth users - check if they exist in PocketBase, if not treat as guest
+          console.log('🔍 OAuth user detected, checking if exists in PocketBase...');
+          try {
+            // Try to verify user exists by making a test API call
+            await pb.collection('_pb_users_auth_').getOne(user.id);
+            console.log('✅ OAuth user verified in PocketBase, using user ID:', user.id);
+            isOAuthUserFlag = true;
+            actualUserId = user.id; // Use real user ID for OAuth users
+          } catch (userCheckError) {
+            console.log('⚠️ OAuth user not found in PocketBase, treating as guest:', userCheckError);
+            isOAuthUserFlag = true;
+            actualUserId = null; // Treat as guest order
+          }
         } else {
           // Regular registered users - use their ID
           actualUserId = user.id;
