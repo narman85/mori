@@ -69,9 +69,10 @@ const Dashboard = () => {
       let filterQuery;
       
       if (userIsOAuth) {
-        // OAuth users: search by email first, then user ID as backup
-        filterQuery = `(guest_email = "${user.email}" || user = "${user.id}")`;
-        console.log('🔍 Dashboard: OAuth user, searching by EMAIL first, then user ID:', user.email, user.id);
+        // OAuth users: search ONLY by email (ignore user ID since it changes each login)
+        filterQuery = `guest_email = "${user.email}"`;
+        console.log('🔍 Dashboard: OAuth user, searching ONLY by EMAIL (ID changes each login):', user.email);
+        console.log('🔍 Dashboard: Ignoring user ID for OAuth user:', user.id);
       } else {
         // Regular user - search by user ID and also check guest orders with same email
         filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;

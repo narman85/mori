@@ -87,9 +87,10 @@ const UserOrders = () => {
       
       // For OAuth users, always search primarily by email since their IDs can change
       if (userIsOAuth) {
-        // OAuth users: search by email first, then user ID as backup
-        filterQuery = `(guest_email = "${user.email}" || user = "${user.id}")`;
-        console.log('🔍 UserOrders: OAuth user, searching by EMAIL first, then user ID:', user.email, user.id);
+        // OAuth users: search ONLY by email (ignore user ID since it changes each login)
+        filterQuery = `guest_email = "${user.email}"`;
+        console.log('🔍 UserOrders: OAuth user, searching ONLY by EMAIL (ID changes each login):', user.email);
+        console.log('🔍 UserOrders: Ignoring user ID for OAuth user:', user.id);
       } else {
         // Regular user - search by user ID and email
         filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
