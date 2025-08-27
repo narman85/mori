@@ -228,9 +228,34 @@ const ProductDetail = () => {
   };
 
   // Get product images with proper URLs
-  const productImages = product.image?.map(img => 
-    pb.files.getURL(product, img)
-  ) || [];
+  const getProductImages = () => {
+    // Temporary solution: Use demo images from CDN
+    const demoImages: { [key: string]: string[] } = {
+      'Hojicha tea': [
+        'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=800&h=800&fit=crop',
+        'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=800&h=800&fit=crop',
+      ],
+      'Earl Grey': [
+        'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=800&h=800&fit=crop',
+        'https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=800&h=800&fit=crop',
+      ],
+    };
+    
+    // Return mapped images
+    if (demoImages[product.name]) {
+      return demoImages[product.name];
+    }
+    
+    // Use PocketBase URLs only in development
+    if ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && product.image) {
+      return product.image.map(img => pb.files.getURL(product, img));
+    }
+    
+    // Default fallback
+    return ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop'];
+  };
+  
+  const productImages = getProductImages();
 
   return (
     <div className="bg-white flex flex-col overflow-hidden items-center">

@@ -104,43 +104,67 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   
   // Get product images with proper URLs
   const getMainImage = () => {
-    // First try to get from PocketBase image field
+    // Temporary solution: Use demo images from CDN
+    // Map product names to specific tea images
+    const demoImages: { [key: string]: string } = {
+      'Hojicha tea': 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=400&h=400&fit=crop', // Hojicha tea
+      'Earl Grey': 'https://images.unsplash.com/photo-1571934811356-5cc061b6821f?w=400&h=400&fit=crop', // Earl Grey tea
+    };
+    
+    // Return mapped image or fallback
+    if (demoImages[product.name]) {
+      return demoImages[product.name];
+    }
+    
+    // First try to get from PocketBase image field (for local development)
     if (product.image && product.image.length > 0) {
       try {
-        // Create a minimal record object for pb.files.getURL
-        const record = {
-          id: product.id,
-          collectionId: 'az4zftchp7yppc0', // products collection ID
-          collectionName: 'products'
-        };
-        // Manual URL construction as fallback
-        const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
-        const manualUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.image[0]}`;
-        const mainImageUrl = pb.files.getURL(record, product.image[0]) || manualUrl;
-        return mainImageUrl;
+        // Only use PocketBase URLs in development
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          const record = {
+            id: product.id,
+            collectionId: 'az4zftchp7yppc0',
+            collectionName: 'products'
+          };
+          const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
+          const manualUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.image[0]}`;
+          const mainImageUrl = pb.files.getURL(record, product.image[0]) || manualUrl;
+          return mainImageUrl;
+        }
       } catch (error) {
         console.error('ProductCard - Error generating main image URL:', error);
       }
     }
+    
     // Fallback to legacy images field
     if (product.images && product.images.length > 0) {
       return product.images[0];
     }
+    
     // Default fallback
-    return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop&crop=center';
+    return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop&crop=center';
   };
 
   const getHoverImage = () => {
-    // Check if we have a dedicated hover image
-    if (product.hover_image) {
+    // Temporary solution: Use demo hover images from CDN
+    const demoHoverImages: { [key: string]: string } = {
+      'Hojicha tea': 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop', // Tea ceremony
+      'Earl Grey': 'https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=400&h=400&fit=crop', // Tea leaves
+    };
+    
+    // Return mapped hover image
+    if (demoHoverImages[product.name]) {
+      return demoHoverImages[product.name];
+    }
+    
+    // Check if we have a dedicated hover image (for local development)
+    if (product.hover_image && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       try {
-        // Create a minimal record object for pb.files.getURL
         const record = {
           id: product.id,
-          collectionId: 'az4zftchp7yppc0', // products collection ID
+          collectionId: 'az4zftchp7yppc0',
           collectionName: 'products'
         };
-        // Manual URL construction as fallback  
         const baseUrl = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
         const manualHoverUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${product.hover_image}`;
         const hoverImageUrl = pb.files.getURL(record, product.hover_image) || manualHoverUrl;
