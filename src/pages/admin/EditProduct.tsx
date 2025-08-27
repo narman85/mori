@@ -62,6 +62,7 @@ const EditProduct: React.FC = () => {
   const [newHoverImage, setNewHoverImage] = useState<File | null>(null);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
   const [deleteHoverImage, setDeleteHoverImage] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // Fetch product data
   useEffect(() => {
@@ -182,6 +183,42 @@ const EditProduct: React.FC = () => {
 
   const removeNewHoverImage = () => {
     setNewHoverImage(null);
+  };
+
+  // Drag and drop handlers for reordering existing images
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+
+    const newImages = [...existingImages];
+    const draggedImage = newImages[draggedIndex];
+    
+    // Remove dragged item
+    newImages.splice(draggedIndex, 1);
+    
+    // Insert at new position
+    newImages.splice(dropIndex, 0, draggedImage);
+    
+    setExistingImages(newImages);
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
   };
 
   const getImageUrl = (imageName: string) => {
@@ -436,17 +473,38 @@ const EditProduct: React.FC = () => {
             {/* Existing Images */}
             {existingImages.length > 0 && (
               <div className="space-y-2">
-                <Label>Current Main Images</Label>
+                <Label>Current Main Images (Drag to reorder)</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                   {existingImages.map((imageName, index) => (
-                    <div key={index} className="relative group">
+                    <div 
+                      key={index} 
+                      className={`relative group cursor-move ${
+                        draggedIndex === index ? 'opacity-50 scale-95' : ''
+                      }`}
+                      draggable={!imagesToDelete.includes(imageName)}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragEnd={handleDragEnd}
+                    >
                       <img
                         src={getImageUrl(imageName)}
                         alt={`Current ${index + 1}`}
-                        className={`w-full h-32 object-cover rounded-lg ${
-                          imagesToDelete.includes(imageName) ? 'opacity-50 grayscale' : ''
+                        className={`w-full h-32 object-cover rounded-lg border-2 transition-all ${
+                          imagesToDelete.includes(imageName) 
+                            ? 'opacity-50 grayscale border-red-300' 
+                            : draggedIndex === index 
+                              ? 'border-blue-400' 
+                              : 'border-transparent hover:border-gray-300'
                         }`}
                       />
+                      
+                      {/* Position indicator */}
+                      <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded">
+                        {index + 1}
+                      </div>
+                      
+                      {/* Delete/Restore button */}
                       {!imagesToDelete.includes(imageName) ? (
                         <button
                           type="button"
@@ -467,6 +525,9 @@ const EditProduct: React.FC = () => {
                     </div>
                   ))}
                 </div>
+                <p className="text-sm text-gray-500">
+                  💡 Drag images to reorder them. The first image will be the main product image.
+                </p>
               </div>
             )}
 
