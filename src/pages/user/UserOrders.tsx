@@ -81,12 +81,20 @@ const UserOrders = () => {
         email: user.email,
         username: user.username,
         isOAuth: userIsOAuth,
-        oldMethod: isOAuthUserId(user.id)
+        oldMethod: isOAuthUserId(user.id),
+        fullUserObject: user
       });
       
-      // All users (OAuth and regular) search by both user ID and email
-      filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
-      console.log('🔍 UserOrders: Searching by user ID and email:', user.id, user.email);
+      // For OAuth users, always search primarily by email since their IDs can change
+      if (userIsOAuth) {
+        // OAuth users: search by email first, then user ID as backup
+        filterQuery = `(guest_email = "${user.email}" || user = "${user.id}")`;
+        console.log('🔍 UserOrders: OAuth user, searching by EMAIL first, then user ID:', user.email, user.id);
+      } else {
+        // Regular user - search by user ID and email
+        filterQuery = `(user = "${user.id}" || guest_email = "${user.email}")`;
+        console.log('🔍 UserOrders: Regular user, searching by user ID and email:', user.id, user.email);
+      }
       
       console.log('🔍 UserOrders: Fetching orders with filter:', filterQuery);
       
