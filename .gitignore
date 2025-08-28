@@ -43,3 +43,4 @@ pb_data/backups/
 nul
 CHANGELOG.md
 LICENSE.md
+.env
