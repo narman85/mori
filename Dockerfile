@@ -1,36 +1,33 @@
-# Use Ubuntu as base image
-FROM ubuntu:22.04
+# Railway optimized PocketBase Dockerfile
+FROM alpine:latest
 
-# Update and install required packages
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    curl \
-    wget \
+ARG PB_VERSION=0.26.2
+
+# Install dependencies
+RUN apk add --no-cache \
     unzip \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    curl
 
 # Create app directory
 WORKDIR /app
 
-# Download PocketBase for Linux
-RUN wget https://github.com/pocketbase/pocketbase/releases/download/v0.23.4/pocketbase_0.23.4_linux_amd64.zip \
-    && unzip pocketbase_0.23.4_linux_amd64.zip \
-    && chmod +x pocketbase \
-    && rm pocketbase_0.23.4_linux_amd64.zip
+# Download and install PocketBase
+ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
+RUN unzip /tmp/pb.zip -d /app/ && \
+    chmod +x /app/pocketbase && \
+    rm /tmp/pb.zip
 
-# Copy database and migrations if they exist
-COPY pb_data ./pb_data
-COPY pb_migrations ./pb_migrations
+# Copy schema and configuration
+COPY pocketbase-schema.json /app/schema.json
+COPY pb_migrations /app/pb_migrations
 
-# Expose port
-EXPOSE 8090
+# Railway uses $PORT environment variable
+EXPOSE $PORT
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8090/api/health || exit 1
+# Health check for Railway
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:$PORT/api/health || exit 1
 
-# Set default port
-ENV PORT=8090
-
-# Start PocketBase with dynamic port
-CMD sh -c "./pocketbase serve --http=0.0.0.0:${PORT}"
+# Start PocketBase with Railway's dynamic port
+CMD ./pocketbase serve --http=0.0.0.0:$PORT
