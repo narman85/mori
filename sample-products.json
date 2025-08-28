@@ -1,0 +1,48 @@
+[
+  {
+    "name": "Hojicha Tea",
+    "description": "Premium Japanese roasted green tea with a distinctive smoky flavor and reddish-brown color. Low in caffeine, perfect for evening enjoyment.",
+    "short_description": "Japanese roasted green tea with smoky flavor",
+    "price": 55,
+    "sale_price": 20,
+    "category": "Green Tea",
+    "in_stock": true,
+    "stock": 15,
+    "image": ["https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=600"],
+    "hover_image": "",
+    "display_order": 1,
+    "hidden": false,
+    "featured": true,
+    "preparation": {
+      "amount": "3",
+      "temperature": "80",
+      "steepTime": "2",
+      "taste": "Smoky and nutty",
+      "grams": "3g",
+      "ml": "250ml"
+    }
+  },
+  {
+    "name": "Earl Grey",
+    "description": "Classic black tea blend flavored with oil of bergamot. A British favorite with citrusy notes and bold flavor.",
+    "short_description": "Classic black tea with bergamot",
+    "price": 30,
+    "sale_price": 0,
+    "category": "Black Tea",
+    "in_stock": true,
+    "stock": 20,
+    "image": ["https://images.unsplash.com/photo-1597318181409-cf64d0b5d8a2?w=600"],
+    "hover_image": "",
+    "display_order": 2,
+    "hidden": false,
+    "featured": false,
+    "preparation": {
+      "amount": "5",
+      "temperature": "95",
+      "steepTime": "3",
+      "taste": "Bold and citrusy",
+      "grams": "5g",
+      "ml": "250ml"
+    }
+  }
+]
