@@ -47,7 +47,6 @@ const AdminLayout = () => {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
           <p className="text-gray-600 mb-4">You don't have permission to access the admin panel.</p>
-          <p className="text-sm text-gray-500 mb-4">Debug: user = {JSON.stringify(user)}</p>
           <Link to="/">
             <Button>Go to Homepage</Button>
           </Link>
