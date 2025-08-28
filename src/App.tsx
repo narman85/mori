@@ -23,7 +23,8 @@ import UsersManagement from "./pages/admin/UsersManagement";
 import UserDetail from "./pages/admin/UserDetail";
 import UserLayout from "./pages/user/UserLayout";
 import UserOrders from "./pages/user/UserOrders";
-import OAuthCallback from "./pages/OAuthCallback";
+// OAuth removed
+import { TestConnection } from "./components/TestConnection";
 
 const queryClient = new QueryClient();
 
@@ -38,8 +39,9 @@ const App = () => (
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/test" element={<TestConnection />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/auth/oauth-callback" element={<OAuthCallback />} />
+              {/* OAuth callback removed */}
               <Route path="/about" element={<About />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout />} />

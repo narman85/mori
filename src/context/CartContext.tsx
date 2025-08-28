@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { Product } from '@/components/ProductCard';
-import { pb } from '@/integrations/supabase/client';
 
 interface CartItem extends Product {
   quantity: number;

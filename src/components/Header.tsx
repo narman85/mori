@@ -3,8 +3,8 @@ import { Menu, X, ChevronDown } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
-import { CartSidebar } from './CartSidebar';
-import { SearchPopup } from './SearchPopup';
+import { CartSidebar } from './CartSidebarSimple';
+// import { SearchPopup } from './SearchPopup'; // Disabled for now
 
 interface HeaderProps {
   className?: string;
@@ -258,11 +258,11 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
         onClose={() => setIsCartOpen(false)} 
       />
 
-      {/* Search Popup */}
-      <SearchPopup 
+      {/* Search Popup - Disabled for now */}
+      {/* <SearchPopup 
         isOpen={isSearchOpen} 
         onClose={() => setIsSearchOpen(false)} 
-      />
+      /> */}
     </>
   );
 };

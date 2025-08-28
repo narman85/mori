@@ -1,14 +1,5 @@
-// PocketBase client configuration
-import PocketBase from 'pocketbase';
+// Legacy client file - all functionality moved to lib/database
+// This file exists only for backward compatibility
 
-// PocketBase URL - change this if your PocketBase runs on different URL
-const POCKETBASE_URL = import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090';
-
-// Create PocketBase instance
-export const pb = new PocketBase(POCKETBASE_URL);
-
-// Enable auto cancellation for pending requests on auth store change
-pb.autoCancellation(false);
-
-// For backward compatibility with existing Supabase imports
-export const supabase = null; // Deprecated: Use pb instead
+export const pb = null; // Removed - use db from lib/database
+export const supabase = null; // Deprecated
