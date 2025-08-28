@@ -202,79 +202,9 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
         console.error('Fallback fetch also failed:', fallbackError);
       }
       
-      // Fallback to demo products if both attempts fail
-      console.log('ProductGrid - Using fallback demo products due to errors');
-      setProducts([
-    {
-      id: '1',
-      name: 'Hōji-cha - Strong Roasted',
-      description: 'A deeply roasted green tea with a smoky, earthy aroma and robust flavor.',
-      price: 18,
-      weight: '100g',
-      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
-    },
-    {
-      id: '2',
-      name: 'Hōji-cha - Strong Roasted',
-      description: 'A deeply roasted green tea with a smoky, earthy aroma and robust flavor.',
-      price: 18,
-      weight: '100g',
-      images: ['https://api.builder.io/api/v1/image/assets/TEMP/f3bba78c5228f67b6184e5f8344191447ce20481?placeholderIfAbsent=true']
-    },
-    {
-      id: '3',
-      name: 'Uji Matcha "Yui"',
-      description: 'High-quality ceremonial-grade matcha from Uji, Kyoto. ..',
-      price: 13,
-      originalPrice: 18,
-      weight: '30g',
-      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
-    },
-    {
-      id: '4',
-      name: 'Uji Matcha "Yui"',
-      description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
-      price: 13,
-      originalPrice: 18,
-      weight: '30g',
-      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
-    },
-    {
-      id: '5',
-      name: 'Uji Matcha "Yui"',
-      description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
-      price: 13,
-      originalPrice: 18,
-      weight: '30g',
-      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
-    },
-    {
-      id: '6',
-      name: 'Uji Matcha "Yui"',
-      description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
-      price: 13,
-      originalPrice: 18,
-      weight: '30g',
-      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
-    },
-    {
-      id: '7',
-      name: 'Uji Matcha "Yui"',
-      description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
-      price: 13,
-      originalPrice: 18,
-      weight: '30g',
-      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
-    },
-    {
-      id: '8',
-      name: 'Uji Matcha "Yui"',
-      description: 'High-quality ceremonial-grade matcha from Uji, Kyoto.',
-      price: 13,
-      originalPrice: 18,
-      weight: '30g',
-      images: ['https://api.builder.io/api/v1/image/assets/TEMP/2eda7905de45b6ae8321802ded9bb0bb102d95d4?placeholderIfAbsent=true']
-    }]);
+      // No fallback products - show empty state
+      console.log('ProductGrid - No products available, showing empty state');
+      setProducts([]);
     } finally {
       setLoading(false);
     }
