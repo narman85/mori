@@ -5,7 +5,7 @@ import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
 import { toast } from 'sonner';
-import { db } from '@/lib/database';
+import { tursoDb } from '@/integrations/turso/client';
 import type { Product } from '@/lib/database';
 
 const ProductDetail = () => {
@@ -23,11 +23,30 @@ const ProductDetail = () => {
       
       try {
         setLoading(true);
-        const fetchedProduct = await db.getProduct(id);
+        const tursoProduct = await tursoDb.getProduct(id);
         
-        if (fetchedProduct) {
-          setProduct(fetchedProduct);
-          setSelectedImage(fetchedProduct.image_url || '');
+        if (tursoProduct) {
+          // Format Turso data to match Product interface
+          const formattedProduct: Product = {
+            id: tursoProduct.id,
+            name: tursoProduct.name,
+            description: tursoProduct.description || '',
+            short_description: tursoProduct.short_description,
+            price: tursoProduct.price,
+            sale_price: tursoProduct.sale_price,
+            stock: tursoProduct.stock,
+            image_url: tursoProduct.image_url,
+            hover_image_url: tursoProduct.hover_image_url,
+            category: tursoProduct.category,
+            is_featured: Boolean(tursoProduct.is_featured),
+            is_active: Boolean(tursoProduct.is_active),
+            display_order: tursoProduct.display_order || 1,
+            created_at: tursoProduct.created_at,
+            updated_at: tursoProduct.updated_at
+          };
+          
+          setProduct(formattedProduct);
+          setSelectedImage(formattedProduct.image_url || '');
         } else {
           navigate('/404');
         }
