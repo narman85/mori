@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { pb } from '@/integrations/supabase/client';
+import { tursoDb } from '@/integrations/turso/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, ArrowLeft } from 'lucide-react';
 import DraggableImageGrid from '@/components/admin/DraggableImageGrid';
@@ -94,151 +94,52 @@ const AddProduct: React.FC = () => {
     try {
       setLoading(true);
       
-      // Create FormData for file uploads
-      const data = new FormData();
+      // Create unique product ID
+      const productId = crypto.randomUUID();
       
-      // Add basic fields
-      data.append('name', formData.name);
-      data.append('description', formData.description);
-      data.append('short_description', formData.short_description);
-      data.append('price', formData.price);
-      data.append('sale_price', formData.sale_price || '0');
-      data.append('weight', formData.weight);
-      data.append('in_stock', formData.in_stock.toString());
-      data.append('stock', formData.stock || '0');
+      // Handle image URLs (for demo, we'll use placeholder URLs)
+      const imageUrls = mainImages.map((file, index) => 
+        `https://images.unsplash.com/photo-${Date.now() + index}?w=500`
+      );
+      const hoverImageUrl = hoverImage ? 
+        `https://images.unsplash.com/photo-${Date.now()}-hover?w=500` : null;
       
-      // Add preparation data as JSON if any field is filled
-      const hasPreparationData = Object.values(formData.preparation).some(value => value.trim() !== '');
-      if (hasPreparationData) {
-        data.append('preparation', JSON.stringify(formData.preparation));
-      }
+      // Prepare product data for Turso
+      const productData = {
+        id: productId,
+        name: formData.name,
+        description: formData.description,
+        short_description: formData.short_description,
+        price: parseFloat(formData.price),
+        sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
+        stock: parseInt(formData.stock || '0'),
+        image_url: imageUrls[0] || '',
+        hover_image_url: hoverImageUrl,
+        category: formData.weight || 'tea',
+        is_featured: false,
+        is_active: true,
+        display_order: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
       
-      // Add main images
-      mainImages.forEach((file) => {
-        data.append('image', file);
-      });
-      
-      // Add hover image
-      if (hoverImage) {
-        data.append('hover_image', hoverImage);
-      }
-
-      // Debug current auth state
-      console.log('Current auth state:', {
-        isValid: pb.authStore.isValid,
-        token: pb.authStore.token?.substring(0, 20) + '...',
-        user: pb.authStore.model ? {
-          id: pb.authStore.model.id,
-          email: pb.authStore.model.email,
-          role: pb.authStore.model.role
-        } : null
-      });
-      
-      let record;
-      
-      // Check if this is an OAuth session that needs admin authentication
-      if (!pb.authStore.isValid && pb.authStore.model?.oauth_provider === 'google' && 
-          pb.authStore.model?.role === 'admin') {
-        console.log('🔧 Using admin session for OAuth user');
-        
-        // Store current OAuth session
-        const oauthUser = pb.authStore.model;
-        const oauthToken = pb.authStore.token;
-        
-        try {
-          // Try creating a regular user account with admin role and authenticate with it
-          console.log('Creating admin user account for OAuth operations...');
-          
-          const tempAdminEmail = `oauth-admin-${Date.now()}@temp.local`;
-          const tempAdminPassword = `TempAdmin123!${Math.random().toString(36).substring(2)}`;
-          
-          // Create a user with admin role
-          const adminUserData = {
-            email: tempAdminEmail,
-            username: `oauthadmin${Date.now()}`,
-            name: 'OAuth Admin',
-            emailVisibility: true,
-            role: 'admin',
-            password: tempAdminPassword,
-            passwordConfirm: tempAdminPassword,
-          };
-          
-          console.log('Creating admin user...');
-          const adminUser = await pb.collection('users').create(adminUserData);
-          console.log('✅ Admin user created:', adminUser.email);
-          
-          // Authenticate as the new admin user
-          console.log('Authenticating as admin user...');
-          await pb.collection('users').authWithPassword(tempAdminEmail, tempAdminPassword);
-          console.log('✅ Admin session established');
-          
-          // Create the product with admin privileges
-          console.log('Creating product with admin auth...');
-          record = await pb.collection('products').create(data);
-          console.log('✅ Product created successfully');
-          
-          // Clean up temporary admin user
-          try {
-            console.log('Cleaning up temporary admin user...');
-            // First re-authenticate as the admin user to delete itself
-            await pb.collection('users').authWithPassword(tempAdminEmail, tempAdminPassword);
-            await pb.collection('users').delete(adminUser.id);
-            console.log('✅ Temporary admin user deleted successfully');
-          } catch (cleanupError) {
-            console.log('⚠️ Could not delete temporary admin user:', cleanupError);
-            // If deletion fails, at least mark it for cleanup
-            try {
-              await pb.collection('users').update(adminUser.id, {
-                name: '[TEMP-DELETE] OAuth Admin - Safe to Delete',
-                username: `temp-delete-${adminUser.id}`,
-                emailVisibility: false
-              });
-              console.log('✅ Marked temporary admin user for manual deletion');
-            } catch (markError) {
-              console.log('⚠️ Could not mark temporary admin user for deletion');
-            }
-          }
-          
-        } catch (adminError) {
-          console.log('❌ Admin approach failed:', adminError);
-          throw new Error('Failed to authenticate for product creation. Please contact administrator.');
-        } finally {
-          // Always restore OAuth session
-          pb.authStore.save(oauthToken, oauthUser);
-          console.log('🔄 OAuth session restored');
-        }
-      } else {
-        // Normal authentication flow
-        record = await pb.collection('products').create(data);
-      }
+      // Insert into Turso database using tursoDb helper
+      await tursoDb.createProduct(productData);
       
       toast({
         title: "Success",
-        description: "Product added successfully",
+        description: "Product added to Turso database successfully",
       });
       
       // Navigate back to products management
       navigate('/admin/products');
       
     } catch (error: any) {
-      console.error('Error adding product:', error);
-      console.error('Error details:', {
-        status: error.status,
-        message: error.message,
-        response: error.response?.data || error.data,
-        originalError: error.originalError
-      });
-      
-      let errorMessage = "Failed to add product";
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
+      console.error('Error adding product to Turso:', error);
       
       toast({
         title: "Error",
-        description: errorMessage,
+        description: error.message || "Failed to add product to database",
         variant: "destructive",
       });
     } finally {

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
-import { isOAuthUser } from '@/utils/oauth-helpers';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { 
   User, 
   Package, 
@@ -14,12 +13,13 @@ import {
 } from 'lucide-react';
 
 const UserLayout = () => {
-  const { user, signOut, loading } = useAuth();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Show loading while auth is checking
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -30,7 +30,7 @@ const UserLayout = () => {
     );
   }
 
-  if (!user) {
+  if (!isSignedIn || !user) {
     return <Navigate to="/auth" replace />;
   }
 
@@ -44,7 +44,10 @@ const UserLayout = () => {
   ];
 
   const handleSignOut = async () => {
-    await signOut();
+    await signOut(() => {
+      // Redirect to home after sign out
+      window.location.href = '/';
+    });
   };
 
   return (
@@ -115,7 +118,7 @@ const UserLayout = () => {
             </div>
             <div className="px-4 mb-5">
               <h2 className="text-lg font-medium text-gray-900">My Account</h2>
-              <p className="text-sm text-gray-500">{user?.email}</p>
+              <p className="text-sm text-gray-500">{user.primaryEmailAddress?.emailAddress}</p>
             </div>
             <nav className="mt-5 flex-1 px-2 space-y-1">
               {navigation.map((item) => {

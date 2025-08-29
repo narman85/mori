@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Product } from '@/components/ProductCard';
+import { Product } from '@/components/ProductCardSimple';
 
 interface CartItem extends Product {
   quantity: number;
@@ -47,66 +47,35 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     );
   };
 
-  // Subscribe to product updates for real-time price changes
+  // Load cart from localStorage on mount
   useEffect(() => {
-    const unsubscribe = pb.collection('products').subscribe('*', function (e) {
-      if (e.action === 'update' && e.record) {
-        console.log('Real-time product update in Cart:', e.record.name, 'new price:', e.record.price);
-        
-        // Transform PocketBase record to Product format
-        const updatedProduct: Product = {
-          id: e.record.id,
-          name: e.record.name,
-          description: e.record.description,
-          short_description: e.record.short_description,
-          price: Number(e.record.price) || 0,
-          sale_price: e.record.sale_price ? Number(e.record.sale_price) : undefined,
-          stock: e.record.stock !== undefined ? Number(e.record.stock) : undefined,
-          weight: e.record.category || '100g',
-          images: e.record.image && e.record.image.length > 0
-            ? e.record.image.map((img: string) => {
-                try {
-                  return pb.files.getURL(e.record, img);
-                } catch (error) {
-                  return 'https://via.placeholder.com/400x400?text=Error';
-                }
-              })
-            : ['https://via.placeholder.com/400x400?text=No+Image'],
-          image: e.record.image,
-          hover_image: e.record.hover_image,
-          originalPrice: undefined
-        };
-
-        // Update product in cart if it exists
-        updateProductInCart(updatedProduct);
+    const savedCart = localStorage.getItem('tea-store-cart');
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart));
+      } catch (error) {
+        console.error('Error loading cart from localStorage:', error);
       }
-    });
+    }
+  }, []);
 
-    return () => {
-      unsubscribe?.then(unsub => unsub?.());
-    };
-  }, []); // Remove cart dependency
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('tea-store-cart', JSON.stringify(cart));
+  }, [cart]);
 
   const addToCart = (product: Product) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id);
+      
       if (existingItem) {
-        // Check stock limit before adding
-        if (product.stock !== undefined && existingItem.quantity >= product.stock) {
-          console.warn(`Cannot add more ${product.name} - stock limit reached (${product.stock})`);
-          return prevCart; // Don't add more
-        }
         return prevCart.map(item =>
           item.id === product.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
-      // Check stock for new item
-      if (product.stock !== undefined && product.stock <= 0) {
-        console.warn(`Cannot add ${product.name} - out of stock`);
-        return prevCart; // Don't add
-      }
+      
       return [...prevCart, { ...product, quantity: 1 }];
     });
   };
@@ -120,18 +89,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       removeFromCart(productId);
       return;
     }
+    
     setCart(prevCart =>
-      prevCart.map(item => {
-        if (item.id === productId) {
-          // Check stock limit before updating quantity
-          if (item.stock !== undefined && quantity > item.stock) {
-            console.warn(`Cannot set quantity to ${quantity} for ${item.name} - stock limit is ${item.stock}`);
-            return { ...item, quantity: item.stock }; // Cap at stock limit
-          }
-          return { ...item, quantity };
-        }
-        return item;
-      })
+      prevCart.map(item =>
+        item.id === productId ? { ...item, quantity } : item
+      )
     );
   };
 
@@ -145,10 +107,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   const getTotalPrice = () => {
     return cart.reduce((total, item) => {
-      const effectivePrice = (item.sale_price && item.sale_price > 0 && item.sale_price < item.price) 
-        ? item.sale_price 
-        : item.price;
-      return total + (effectivePrice * item.quantity);
+      const price = item.sale_price || item.price;
+      return total + (price * item.quantity);
     }, 0);
   };
 
@@ -157,18 +117,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return item ? item.quantity : 0;
   };
 
+  const value: CartContextType = {
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    updateProductInCart,
+    clearCart,
+    getTotalItems,
+    getTotalPrice,
+    getItemQuantity,
+  };
+
   return (
-    <CartContext.Provider value={{
-      cart,
-      addToCart,
-      removeFromCart,
-      updateQuantity,
-      updateProductInCart,
-      clearCart,
-      getTotalItems,
-      getTotalPrice,
-      getItemQuantity
-    }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

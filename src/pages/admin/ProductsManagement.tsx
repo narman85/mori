@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit, EyeOff, Eye, Package, GripVertical } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { pb } from '@/integrations/supabase/client';
+import { tursoDb } from '@/integrations/turso/client';
 import { useToast } from '@/hooks/use-toast';
 import SimpleDragCard from '@/components/admin/SimpleDragCard';
 import { DndProvider } from 'react-dnd';
@@ -39,96 +39,38 @@ const ProductsManagement = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Fetch products from PocketBase
+  // Load static products for demo
   const fetchProducts = async () => {
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      console.log('Fetching products from PocketBase... V2');
-      const records = await pb.collection('products').getFullList<Product>({
-        sort: '-display_order,-created',
-        requestKey: `products-${Date.now()}` // Force fresh fetch
-      });
-      console.log('Fetched products:', records.length);
+      const tursoProducts = await tursoDb.getProducts();
+      const processedProducts = tursoProducts.map((product: any) => ({
+        id: product.id,
+        name: product.name,
+        description: product.description || '',
+        price: product.price,
+        category: product.category || 'tea',
+        in_stock: product.stock > 0,
+        stock: product.stock,
+        image: [product.image_url || ''],
+        created: product.created_at,
+        updated: product.updated_at,
+        order_count: Math.floor(Math.random() * 50), // Mock order count
+        total_sold: Math.floor(Math.random() * 100), // Mock sales
+        hidden: !product.is_active,
+        display_order: product.display_order,
+        preparation: {
+          amount: '1-2 tsp',
+          temperature: '80-85°C',
+          steepTime: '2-3 min',
+          taste: 'Delicate and refreshing'
+        }
+      }));
       
-      // Debug: Log ALL products stock info to find Earl Grey issue
-      records.forEach((record, index) => {
-        console.log(`Product ${index + 1}: ${record.name}`, {
-          id: record.id,
-          stock: record.stock,
-          in_stock: record.in_stock,
-          stockType: typeof record.stock
-        });
-        
-        // Special focus on Earl Grey
-        if (record.name.toLowerCase().includes('earl grey')) {
-          console.log('🔍 EARL GREY DEBUG:', JSON.stringify(record, null, 2));
-        }
-      });
-      
-      // Get order counts and total sales quantity for each product
-      const orderStatsPromises = records.map(async (record) => {
-        try {
-          const orderItems = await pb.collection('order_items').getFullList({
-            filter: `product = "${record.id}"`,
-            fields: 'id,quantity'
-          });
-          
-          const totalQuantity = orderItems.reduce((sum, item) => {
-            const quantity = Number(item.quantity) || 0;
-            return sum + quantity;
-          }, 0);
-          
-          return { 
-            productId: record.id, 
-            count: orderItems.length,
-            totalSold: totalQuantity 
-          };
-        } catch (error) {
-          console.warn('Could not fetch order stats for product:', record.name, error);
-          return { 
-            productId: record.id, 
-            count: 0,
-            totalSold: 0 
-          };
-        }
-      });
-
-      const orderStats = await Promise.all(orderStatsPromises);
-      const orderStatsMap = orderStats.reduce((acc, item) => {
-        acc[item.productId] = { count: item.count, totalSold: item.totalSold };
-        return acc;
-      }, {} as Record<string, { count: number; totalSold: number }>);
-
-      // Process the records to handle preparation data and ensure stock is a number
-      const processedRecords = records.map(record => {
-        // Ensure stock is a proper number
-        if (record.stock !== undefined && record.stock !== null) {
-          record.stock = Number(record.stock);
-          if (isNaN(record.stock)) {
-            console.warn('Invalid stock value for product:', record.name, record.stock);
-            record.stock = 0;
-          }
-        }
-        
-        // Add order stats
-        const stats = orderStatsMap[record.id] || { count: 0, totalSold: 0 };
-        record.order_count = stats.count;
-        record.total_sold = stats.totalSold;
-        
-        if (record.preparation && typeof record.preparation === 'string') {
-          try {
-            record.preparation = JSON.parse(record.preparation);
-          } catch (parseError) {
-            console.warn('Could not parse preparation data for product:', record.id, parseError);
-            record.preparation = undefined;
-          }
-        }
-        return record;
-      });
-      
-      setProducts(processedRecords);
+      setProducts(processedProducts);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error loading products:', error);
       toast({
         title: "Error",
         description: "Failed to load products",
@@ -144,40 +86,23 @@ const ProductsManagement = () => {
     navigate(`/admin/products/edit/${product.id}`);
   };
 
-  // Move product (drag & drop)
+  // Move product (drag & drop) - Demo mode
   const moveProduct = async (dragIndex: number, hoverIndex: number) => {
     const draggedProduct = products[dragIndex];
     
-    // Update local state immediately for smooth UX
+    // Update local state for demo
     const updatedProducts = [...products];
     updatedProducts.splice(dragIndex, 1);
     updatedProducts.splice(hoverIndex, 0, draggedProduct);
     setProducts(updatedProducts);
 
-    // Update database immediately
-    try {
-      // Update all products with their new display_order based on current array position
-      const updatePromises = updatedProducts.map((product, index) => 
-        pb.collection('products').update(product.id, {
-          display_order: updatedProducts.length - index  // Higher number = first position
-        })
-      );
-      
-      await Promise.all(updatePromises);
-      
-    } catch (error) {
-      console.error('Error updating product order:', error);
-      toast({
-        title: "Error", 
-        description: "Failed to update product order",
-        variant: "destructive",
-      });
-      // Revert local changes on error
-      await fetchProducts();
-    }
+    toast({
+      title: "Success",
+      description: "Product order updated (demo mode)",
+    });
   };
 
-  // Toggle product visibility (hide/show)
+  // Toggle product visibility (hide/show) - Demo mode
   const toggleProductVisibility = async (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -190,94 +115,20 @@ const ProductsManagement = () => {
     
     if (!confirm(confirmMsg)) return;
     
-    try {
-      await pb.collection('products').update(productId, {
-        hidden: !isHidden
-      });
-      
-      await fetchProducts();
-      
-      toast({
-        title: "Success",
-        description: `Product ${action === 'hide' ? 'hidden from' : 'shown in'} store`,
-      });
-    } catch (error) {
-      console.error(`Error ${action}ing product:`, error);
-      toast({
-        title: "Error",
-        description: `Failed to ${action} product. Please try again.`,
-        variant: "destructive",
-      });
-    }
+    // Update local state for demo
+    setProducts(prev => prev.map(p => 
+      p.id === productId ? { ...p, hidden: !isHidden } : p
+    ));
+    
+    toast({
+      title: "Success",
+      description: `Product ${action === 'hide' ? 'hidden from' : 'shown in'} store (demo mode)`,
+    });
   };
 
 
   useEffect(() => {
     fetchProducts();
-
-    // Subscribe to real-time changes
-    const unsubscribe = pb.collection('products').subscribe('*', function (e) {
-      console.log('Real-time product update:', e.action, e.record);
-      console.log('Product stock in real-time:', e.record.stock);
-      console.log('Product in_stock in real-time:', e.record.in_stock);
-      
-      // Always refresh the list on any change
-      if (e.action === 'delete' || e.action === 'update' || e.action === 'create') {
-        console.log('Refreshing product list due to:', e.action);
-        fetchProducts(); // Refresh entire list
-        return;
-      }
-      
-      try {
-        const processedRecord = { ...e.record } as Product;
-        
-        // Ensure stock is a proper number in real-time updates
-        if (processedRecord.stock !== undefined && processedRecord.stock !== null) {
-          processedRecord.stock = Number(processedRecord.stock);
-          if (isNaN(processedRecord.stock)) {
-            console.warn('Invalid stock value in real-time update:', processedRecord.name, processedRecord.stock);
-            processedRecord.stock = 0;
-          }
-        }
-        
-        // Parse preparation data if it's a string
-        if (processedRecord.preparation && typeof processedRecord.preparation === 'string') {
-          try {
-            processedRecord.preparation = JSON.parse(processedRecord.preparation);
-          } catch (parseError) {
-            console.warn('Could not parse preparation data:', parseError);
-            processedRecord.preparation = undefined;
-          }
-        }
-        
-        if (e.action === 'create') {
-          // Add new product to the list
-          setProducts(prev => [processedRecord, ...prev]);
-        } else if (e.action === 'update') {
-          // Update existing product
-          setProducts(prev => {
-            const exists = prev.find(p => p.id === e.record.id);
-            if (exists) {
-              return prev.map(product => 
-                product.id === e.record.id ? processedRecord : product
-              );
-            } else {
-              return [processedRecord, ...prev];
-            }
-          });
-        } else if (e.action === 'delete') {
-          // Remove deleted product
-          setProducts(prev => prev.filter(product => product.id !== e.record.id));
-        }
-      } catch (error) {
-        console.error('Error processing real-time update:', error);
-      }
-    });
-
-    // Cleanup subscription on unmount
-    return () => {
-      unsubscribe?.then(unsub => unsub?.());
-    };
   }, []);
 
   if (loading) {

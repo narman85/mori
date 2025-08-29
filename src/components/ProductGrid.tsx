@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ProductCard, Product } from './ProductCardSimple';
 import { CartSidebar } from './CartSidebarSimple';
-import { db } from '@/lib/database';
+import { tursoDb } from '@/integrations/turso/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ProductGridProps {
@@ -49,7 +49,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
 
   if (loading) {
     return (
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 ${className}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-6 md:px-8 lg:px-12 xl:px-16 w-full ${className}`}>
         {Array.from({ length: 8 }).map((_, index) => (
           <div key={index} className="space-y-3">
             <Skeleton className="h-48 w-full rounded-lg" />
@@ -77,11 +77,12 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
 
   return (
     <>
-      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 ${className}`}>
+      <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-6 md:px-8 lg:px-12 xl:px-16 w-full ${className}`}>
         {products.map((product) => (
           <ProductCard
             key={product.id}
             product={product}
+            onAddToCart={() => {}}
             onCartOpen={() => setIsCartOpen(true)}
           />
         ))}

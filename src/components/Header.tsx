@@ -3,6 +3,7 @@ import { Menu, X, ChevronDown } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useUser, UserButton } from '@clerk/clerk-react';
 import { CartSidebar } from './CartSidebarSimple';
 // import { SearchPopup } from './SearchPopup'; // Disabled for now
 
@@ -18,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const { getTotalItems } = useCart();
   const { user } = useAuth();
+  const { isSignedIn, user: clerkUser } = useUser();
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -111,16 +113,35 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
           </button>
           
           {/* User Account - Show on tablet+ */}
-          <button 
-            onClick={() => navigate(user ? '/account' : '/auth')}
-            className="hidden md:block aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity"
-          >
-            <img
-              src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
-              alt="User account"
-              className="w-full h-full"
-            />
-          </button>
+          <div className="hidden md:block">
+            {isSignedIn ? (
+              <button 
+                onClick={() => {
+                  console.log('User icon clicked, navigating to /account');
+                  navigate('/account');
+                }}
+                className="aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity"
+                title={`Welcome, ${clerkUser?.firstName || 'User'}`}
+              >
+                <img
+                  src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
+                  alt="User account"
+                  className="w-full h-full"
+                />
+              </button>
+            ) : (
+              <button 
+                onClick={() => navigate('/auth')}
+                className="aspect-[1] object-contain w-5 md:w-6 hover:opacity-70 transition-opacity"
+              >
+                <img
+                  src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
+                  alt="User account"
+                  className="w-full h-full"
+                />
+              </button>
+            )}
+          </div>
           
           {/* Cart Button */}
           <button 
@@ -193,20 +214,37 @@ export const Header: React.FC<HeaderProps> = ({ className = '' }) => {
               </button>
 
               {/* Account */}
-              <button 
-                onClick={() => {
-                  navigate(user ? '/account' : '/auth');
-                  setIsMobileMenuOpen(false);
-                }}
-                className="flex items-center gap-3 p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors text-left"
-              >
-                <img
-                  src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
-                  alt="User account"
-                  className="w-5 h-5"
-                />
-                <span>{user ? 'My Account' : 'Sign In'}</span>
-              </button>
+              {isSignedIn ? (
+                <button 
+                  onClick={() => {
+                    navigate('/account');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors text-left"
+                >
+                  <img
+                    src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
+                    alt="User account"
+                    className="w-5 h-5"
+                  />
+                  <span>My Account ({clerkUser?.firstName || 'User'})</span>
+                </button>
+              ) : (
+                <button 
+                  onClick={() => {
+                    navigate('/auth');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 p-4 text-lg hover:bg-gray-50 rounded-lg transition-colors text-left"
+                >
+                  <img
+                    src="https://api.builder.io/api/v1/image/assets/TEMP/f6d00f3370ac259b02aa149455d071c73852c30a?placeholderIfAbsent=true"
+                    alt="User account"
+                    className="w-5 h-5"
+                  />
+                  <span>Sign In</span>
+                </button>
+              )}
 
               {/* Navigation Items */}
               {navigationItems.map((item, index) => (

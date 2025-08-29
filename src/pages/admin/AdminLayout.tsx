@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { 
   LayoutDashboard, 
   Package, 
@@ -9,18 +9,19 @@ import {
   Users,
   LogOut,
   Menu,
-  X
+  X,
+  Home
 } from 'lucide-react';
 import { useState } from 'react';
 
 const AdminLayout = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { signOut } = useClerk();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-
   // Show loading while auth is checking
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -31,15 +32,12 @@ const AdminLayout = () => {
     );
   }
 
-  if (!user) {
+  if (!isSignedIn || !user) {
     return <Navigate to="/auth" replace />;
   }
 
-  // Check if user is admin - only specific admin users should have access
-  const isAdmin = user && (
-    user.role === 'admin' || 
-    user.email === 'babayev1994@gmail.com' // Your admin email
-  );
+  // Check if user is admin - only users with admin role should have access
+  const isAdmin = user && user.publicMetadata?.role === 'admin';
 
   if (!isAdmin) {
     return (
@@ -102,8 +100,13 @@ const AdminLayout = () => {
               </button>
             </div>
             <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-              <div className="flex-shrink-0 flex items-center px-4">
+              <div className="flex-shrink-0 flex items-center justify-between px-4">
                 <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
+                <Link to="/">
+                  <Button variant="ghost" size="sm" title="Ana səhifə">
+                    <Home className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
               <nav className="mt-5 px-2 space-y-1">
                 {navigation.map((item) => {
@@ -129,7 +132,7 @@ const AdminLayout = () => {
             <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
               <div className="flex items-center">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">{user.email}</p>
+                  <p className="text-sm font-medium text-gray-700">{user.primaryEmailAddress?.emailAddress}</p>
                   <p className="text-xs text-gray-500">Admin</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleSignOut} className="ml-3">
@@ -146,8 +149,13 @@ const AdminLayout = () => {
         <div className="flex flex-col w-64">
           <div className="flex flex-col h-0 flex-1 border-r border-gray-200 bg-white">
             <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-              <div className="flex items-center flex-shrink-0 px-4">
+              <div className="flex items-center justify-between flex-shrink-0 px-4">
                 <h1 className="text-xl font-bold text-gray-900">Admin Panel</h1>
+                <Link to="/">
+                  <Button variant="ghost" size="sm" title="Ana səhifə">
+                    <Home className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
               <nav className="mt-5 flex-1 px-2 bg-white space-y-1">
                 {navigation.map((item) => {
@@ -172,7 +180,7 @@ const AdminLayout = () => {
             <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
               <div className="flex items-center w-full">
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-700">{user.email}</p>
+                  <p className="text-sm font-medium text-gray-700">{user.primaryEmailAddress?.emailAddress}</p>
                   <p className="text-xs text-gray-500">Admin</p>
                 </div>
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>

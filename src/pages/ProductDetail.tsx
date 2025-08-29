@@ -4,94 +4,88 @@ import { ArrowLeft, Plus, Minus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Button } from '@/components/ui/button';
 import { Header } from '@/components/Header';
-import { CartSidebar } from '@/components/CartSidebar';
 import { toast } from 'sonner';
-import ProductImageGallery from '@/components/ProductImageGallery';
-import TeaPreparationGuide from '@/components/TeaPreparationGuide';
-import { pb } from '@/integrations/supabase/client';
-
-interface DetailProduct {
-  id: string;
-  name: string;
-  description: string;
-  short_description?: string;
-  price: number;
-  sale_price?: number;
-  image?: string[];
-  hover_image?: string;
-  weight?: string;
-  category?: string;
-  stock?: number;
-  created: string;
-  updated: string;
-  hidden?: boolean;
-  preparation?: {
-    amount: string;
-    temperature: string;
-    steepTime: string;
-    taste: string;
-  };
-}
-
+import { db } from '@/lib/database';
+import type { Product } from '@/lib/database';
 
 const ProductDetail = () => {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addToCart, removeFromCart, getItemQuantity, updateQuantity } = useCart();
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [product, setProduct] = useState<DetailProduct | null>(null);
+  const { addToCart, getItemQuantity } = useCart();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [selectedImage, setSelectedImage] = useState<string>('');
 
-  // Fetch product from PocketBase
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
       
       try {
         setLoading(true);
-        const record = await pb.collection('products').getOne<DetailProduct>(id);
+        const fetchedProduct = await db.getProduct(id);
         
-        // Parse preparation data if it's a string
-        if (record.preparation && typeof record.preparation === 'string') {
-          try {
-            record.preparation = JSON.parse(record.preparation);
-          } catch (parseError) {
-            console.warn('Could not parse preparation data:', parseError);
-            record.preparation = undefined;
-          }
-        }
-        
-        // Handle sale_price: convert 0 to undefined
-        if (record.sale_price === 0) {
-          record.sale_price = undefined;
-        }
-        
-        // Check if product is hidden - if so, treat as not found
-        if (record.hidden) {
-          setProduct(null);
+        if (fetchedProduct) {
+          setProduct(fetchedProduct);
+          setSelectedImage(fetchedProduct.image_url || '');
         } else {
-          setProduct(record);
+          navigate('/404');
         }
       } catch (error) {
         console.error('Error fetching product:', error);
         toast.error('Failed to load product');
-        setProduct(null);
+        navigate('/');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProduct();
-  }, [id]);
+  }, [id, navigate]);
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    
+    if (product.stock <= 0) {
+      toast.error('Product is out of stock');
+      return;
+    }
+
+    // Add multiple quantities
+    for (let i = 0; i < quantity; i++) {
+      addToCart(product as any); // Type conversion for compatibility
+    }
+    
+    toast.success(`Added ${quantity} ${product.name} to cart!`);
+  };
+
+  const increaseQuantity = () => {
+    if (product && quantity < product.stock) {
+      setQuantity(prev => prev + 1);
+    }
+  };
+
+  const decreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="bg-white flex flex-col overflow-hidden items-center">
+      <div className="min-h-screen bg-white">
         <Header />
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading product...</p>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="aspect-square bg-gray-200 rounded-lg"></div>
+              <div className="space-y-4">
+                <div className="h-8 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-12 bg-gray-200 rounded"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -100,336 +94,143 @@ const ProductDetail = () => {
 
   if (!product) {
     return (
-      <div className="bg-white flex flex-col overflow-hidden items-center">
+      <div className="min-h-screen bg-white">
         <Header />
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Product not found</h1>
-            <Button onClick={() => navigate('/')}>Back to Home</Button>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <p>Product not found</p>
         </div>
       </div>
     );
   }
 
-  // Format weight with 'g' if it's just a number
-  const formatWeight = (weight: string) => {
-    if (!weight) return '';
-    
-    // Check if it's just a number (no letters)
-    const isOnlyNumber = /^\d+$/.test(weight.trim());
-    
-    if (isOnlyNumber) {
-      return `${weight}g`;
-    }
-    
-    return weight;
-  };
-
-  // Debug discount logic
-  const hasDiscount = product.sale_price && product.sale_price > 0 && product.sale_price < product.price;
-  if (product.sale_price !== undefined) {
-    console.log(`Product "${product.name}" discount debug:`, {
-      price: product.price,
-      sale_price: product.sale_price,
-      hasDiscount: hasDiscount
-    });
-  }
-
-  const handleAddToCart = () => {
-    // Check stock availability
-    if (product.stock !== undefined && product.stock !== null) {
-      const currentInCart = getItemQuantity(product.id);
-      if (product.stock <= 0) {
-        toast.error("Out of Stock", {
-          description: "This product is currently out of stock",
-          position: "bottom-left"
-        });
-        return;
-      }
-      if (currentInCart >= product.stock) {
-        toast.error("Stock Limit Reached", {
-          description: `Only ${product.stock} items available in stock`,
-          position: "bottom-left"
-        });
-        return;
-      }
-    }
-
-    // Convert DetailProduct to Product format for cart
-    const cartProduct = {
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      sale_price: product.sale_price, // Include sale_price for cart discount
-      weight: product.weight || '',
-      stock: product.stock,
-      images: productImages, // Use the same images we show in the gallery
-      image: product.image, // Raw image array for ProductCard compatibility
-      hover_image: product.hover_image
-    };
-    
-    console.log('Adding to cart:', cartProduct);
-    addToCart(cartProduct);
-    
-    // Automatically open cart sidebar after adding item
-    setTimeout(() => {
-      setIsCartOpen(true);
-    }, 600); // Small delay to show the toast first
-    
-    toast.success(`${product.name} added`, {
-      description: "Opening cart...",
-      duration: 2000,
-      position: "bottom-left"
-    });
-  };
-
-  const handleIncrement = () => {
-    // Check stock limit before incrementing
-    if (product.stock !== undefined && product.stock !== null) {
-      const currentInCart = getItemQuantity(product.id);
-      if (currentInCart >= product.stock) {
-        toast.error("Stock Limit Reached", {
-          description: `Only ${product.stock} items available in stock`,
-          position: "bottom-left"
-        });
-        return;
-      }
-    }
-
-    // Convert DetailProduct to Product format for cart
-    const cartProduct = {
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      weight: product.weight || '',
-      stock: product.stock,
-      images: productImages, // Use the same images we show in the gallery
-      image: product.image, // Raw image array for ProductCard compatibility
-      hover_image: product.hover_image
-    };
-    
-    addToCart(cartProduct);
-    toast.success(`${product.name} quantity increased`, {
-      position: "bottom-left",
-      duration: 2000
-    });
-  };
-
-  const handleDecrement = () => {
-    const currentQuantity = getItemQuantity(product.id);
-    if (currentQuantity > 1) {
-      updateQuantity(product.id, currentQuantity - 1);
-    } else {
-      removeFromCart(product.id);
-    }
-    toast.success(`${product.name} quantity decreased`, {
-      position: "bottom-left",
-      duration: 2000
-    });
-  };
-
-  // Get product images with proper URLs
-  const getProductImages = () => {
-    if (!product.image || product.image.length === 0) {
-      // No images available, return fallback
-      return ['https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop'];
-    }
-
-    return product.image.map(img => {
-      // If it's already a full URL (Imgur, etc.), return directly
-      if (img.startsWith('http')) {
-        return img;
-      }
-      
-      // If it's base64, return directly
-      if (img.startsWith('data:')) {
-        return img;
-      }
-      
-      // Otherwise it's a PocketBase filename - build proper URL
-      try {
-        // Create proper record object for pb.files.getURL
-        const record = {
-          id: product.id,
-          collectionId: 'az4zftchp7yppc0', // products collection ID
-          collectionName: 'products',
-          image: product.image
-        };
-        
-        // Use PocketBase built-in method to generate correct URL
-        const imageUrl = pb.files.getURL(record, img);
-        console.log('🖼️ ProductDetail image URL generated via pb.files.getURL:', imageUrl);
-        return imageUrl;
-      } catch (error) {
-        console.error('ProductDetail - Error generating image URL with pb.files.getURL:', error);
-        
-        // Fallback to manual URL construction
-        try {
-          const isProd = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-          const baseUrl = isProd 
-            ? 'https://mori-tea.pockethost.io' 
-            : (import.meta.env.VITE_POCKETBASE_URL || 'http://127.0.0.1:8090');
-          
-          const fallbackUrl = `${baseUrl}/api/files/az4zftchp7yppc0/${product.id}/${img}`;
-          console.log('🖼️ ProductDetail image fallback URL:', fallbackUrl);
-          return fallbackUrl;
-        } catch (fallbackError) {
-          console.error('ProductDetail - Fallback URL generation failed:', fallbackError);
-          return 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop';
-        }
-      }
-    });
-  };
-  
-  const productImages = getProductImages();
+  const currentPrice = product.sale_price || product.price;
+  const hasDiscount = Boolean(product.sale_price && product.sale_price < product.price);
+  const cartQuantity = getItemQuantity(product.id);
 
   return (
-    <div className="bg-white flex flex-col overflow-hidden items-center">
+    <div className="min-h-screen bg-white">
       <Header />
       
-      <main className="w-full flex flex-col items-center">
-        {/* Back button */}
-        <div className="w-full max-w-7xl px-4 py-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')}
-            className="mb-6 gap-2 text-black hover:bg-[rgba(238,238,238,1)]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="mb-6 p-0 hover:bg-transparent"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" />
+          Back to Products
+        </Button>
 
-          {/* Product detail content */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-            {/* Left side - Product image gallery */}
-            <div className="flex justify-center lg:justify-start">
-              <div className="w-full max-w-md lg:max-w-none">
-                {productImages.length > 0 ? (
-                  <ProductImageGallery 
-                    images={productImages} 
-                    productName={product.name}
-                  />
-                ) : (
-                  <div className="aspect-square bg-gray-100 flex items-center justify-center rounded-lg">
-                    <span className="text-gray-400">No image available</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right side - Product info */}
-            <div className="flex flex-col justify-center space-y-6 p-6 lg:p-8">
-              {/* Product name */}
-              <h1 className="text-2xl lg:text-3xl font-medium text-black leading-tight">
-                {product.name}
-              </h1>
-
-              {/* Product description */}
-              <div className="space-y-4">
-                <p className="text-[rgba(80,80,80,1)] leading-relaxed text-sm lg:text-base">
-                  {product.description}
-                </p>
-              </div>
-
-              {/* Product Details */}
-              <div className="flex flex-col gap-4">
-                {/* Weight and Price on same line */}
-                <div className="flex items-center justify-between">
-                  {/* Weight */}
-                  {product.category && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-black font-medium">Weight:</span>
-                      <span className="text-[rgba(173,29,24,1)] font-medium">{formatWeight(product.category)}</span>
-                    </div>
-                  )}
-                  
-                  {/* Price */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-black font-medium">Price:</span>
-                    <div className="flex items-center gap-3">
-                      {/* Show original price with red strikethrough if there's a discount */}
-                      {product.sale_price && product.sale_price > 0 && product.sale_price < product.price && (
-                        <span 
-                          className="text-xl lg:text-2xl font-medium text-black relative"
-                          style={{
-                            textDecoration: 'line-through',
-                            textDecorationColor: 'red',
-                            textDecorationThickness: '2px'
-                          }}
-                        >
-                          €{product.price.toFixed(2)}
-                        </span>
-                      )}
-                      {/* Show sale price if discount exists, otherwise show regular price */}
-                      <span className="text-xl lg:text-2xl font-medium text-black">
-                        €{(product.sale_price && product.sale_price > 0 && product.sale_price < product.price) 
-                          ? product.sale_price.toFixed(2) 
-                          : product.price.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Buy button */}
-              <div className="pt-4">
-                {product.stock === 0 ? (
-                  <div className="w-full bg-gray-200 border border-gray-300 flex items-center justify-center p-4 lg:p-6">
-                    <span className="text-base font-normal text-gray-500">
-                      Out of Stock
-                    </span>
-                  </div>
-                ) : getItemQuantity(product.id) > 0 ? (
-                  <div className="w-full bg-[rgba(226,226,226,1)] border-[rgba(209,209,209,1)] border flex items-center justify-between p-4 lg:p-6">
-                    <button
-                      onClick={handleDecrement}
-                      className="flex items-center justify-center w-8 h-8 hover:bg-[rgba(216,216,216,1)] rounded transition-colors"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </button>
-                    <span className="text-base font-normal text-black">
-                      In cart ({getItemQuantity(product.id)})
-                    </span>
-                    <button
-                      onClick={handleIncrement}
-                      className="flex items-center justify-center w-8 h-8 hover:bg-[rgba(216,216,216,1)] rounded transition-colors"
-                      disabled={product.stock !== undefined && getItemQuantity(product.id) >= product.stock}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleAddToCart}
-                    className="bg-[rgba(226,226,226,1)] w-full flex items-center justify-center gap-2 text-base text-black font-normal p-4 lg:p-6 border-[rgba(209,209,209,1)] border hover:bg-[rgba(216,216,216,1)] transition-colors"
-                  >
-                    Add to Cart
-                  </button>
-                )}
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Product Images */}
+          <div className="space-y-4">
+            <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+              <img
+                src={selectedImage || product.image_url || 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600'}
+                alt={product.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=600';
+                }}
+              />
             </div>
           </div>
 
-          {/* Tea Preparation Guide */}
-          {product.preparation && (
-            <TeaPreparationGuide 
-              preparation={product.preparation}
-              productName={product.name}
-            />
-          )}
+          {/* Product Details */}
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                {product.name}
+              </h1>
+              
+              {product.short_description && (
+                <p className="text-lg text-gray-600 mb-4">
+                  {product.short_description}
+                </p>
+              )}
 
+              <div className="flex items-center gap-4 mb-4">
+                <span className="text-3xl font-bold text-gray-900">
+                  ${currentPrice.toFixed(2)}
+                </span>
+                {hasDiscount && (
+                  <span className="text-xl text-gray-500 line-through">
+                    ${product.price.toFixed(2)}
+                  </span>
+                )}
+              </div>
+
+              {product.category && (
+                <p className="text-sm text-gray-500 mb-4">
+                  Category: {product.category}
+                </p>
+              )}
+            </div>
+
+            {/* Stock Status */}
+            <div className="mb-6">
+              {product.stock > 0 ? (
+                <p className="text-green-600 font-medium">
+                  ✅ In Stock ({product.stock} available)
+                </p>
+              ) : (
+                <p className="text-red-600 font-medium">
+                  ❌ Out of Stock
+                </p>
+              )}
+            </div>
+
+            {/* Quantity Selector */}
+            <div className="flex items-center gap-4 mb-6">
+              <span className="font-medium">Quantity:</span>
+              <div className="flex items-center border rounded-lg">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={decreaseQuantity}
+                  disabled={quantity <= 1}
+                  className="px-3"
+                >
+                  <Minus className="w-4 h-4" />
+                </Button>
+                <span className="px-4 py-2 font-medium">{quantity}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={increaseQuantity}
+                  disabled={quantity >= product.stock}
+                  className="px-3"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Add to Cart Button */}
+            <Button
+              onClick={handleAddToCart}
+              disabled={product.stock <= 0}
+              className="w-full h-12 text-lg bg-gray-900 hover:bg-gray-800"
+            >
+              {product.stock <= 0 
+                ? 'Out of Stock' 
+                : `Add ${quantity} to Cart ${cartQuantity > 0 ? `(${cartQuantity} in cart)` : ''}`}
+            </Button>
+
+            {/* Description */}
+            {product.description && (
+              <div className="pt-6 border-t">
+                <h3 className="font-semibold mb-2">Description</h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {product.description}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </main>
-
-      {/* Cart Sidebar */}
-      <CartSidebar 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-      />
+      </div>
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
+import { useUser, useSignIn, useSignUp, useClerk } from '@clerk/clerk-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
@@ -15,6 +16,10 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  const { isSignedIn, user: clerkUser } = useUser();
+  const { signIn: clerkSignIn, isLoaded: signInLoaded, setActive } = useSignIn();
+  const { signUp: clerkSignUp, isLoaded: signUpLoaded } = useSignUp();
+  const clerk = useClerk();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -32,10 +37,10 @@ const Auth = () => {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (user) {
+    if (user || isSignedIn) {
       navigate('/');
     }
-  }, [user, navigate]);
+  }, [user, isSignedIn, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,37 +56,62 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const { error } = isLogin 
-        ? await signIn(email, password)
-        : await signUp(email, password);
+      if (isLogin) {
+        // Use Clerk for sign in
+        if (!clerkSignIn || !signInLoaded) return;
+        
+        const result = await clerkSignIn.create({
+          identifier: email,
+          password,
+        });
 
-      if (error) {
-        let errorMessage = "An error occurred";
-        
-        if (error.message.includes("Invalid login credentials")) {
-          errorMessage = "Email or password is incorrect";
-        } else if (error.message.includes("User already registered")) {
-          errorMessage = "This email is already registered";
-        } else if (error.message.includes("Password should be at least 6 characters")) {
-          errorMessage = "Password must be at least 6 characters";
+        if (result.status === 'complete') {
+          await setActive({ session: result.createdSessionId });
+          toast({
+            title: "Success!",
+            description: "Successfully signed in!",
+          });
+          navigate('/');
         }
+      } else {
+        // Use Clerk for sign up
+        if (!clerkSignUp || !signUpLoaded) return;
         
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
+        const result = await clerkSignUp.create({
+          emailAddress: email,
+          password,
         });
-      } else if (!isLogin) {
-        toast({
-          title: "Success!",
-          description: "Registration completed. Check your email.",
-        });
-        setIsLogin(true);
+
+        if (result.status === 'complete') {
+          await clerk.setActive({ session: result.createdSessionId });
+          toast({
+            title: "Success!",
+            description: "Account created successfully!",
+          });
+          navigate('/');
+        } else if (result.status === 'missing_requirements') {
+          // Handle email verification if required
+          await result.prepareEmailAddressVerification({ strategy: 'email_code' });
+          toast({
+            title: "Check your email",
+            description: "Please verify your email to complete registration.",
+          });
+        }
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.log('Full Clerk error:', err);
+      let errorMessage = "An error occurred";
+      
+      if (err.errors && err.errors[0]) {
+        errorMessage = err.errors[0].longMessage || err.errors[0].message;
+        console.log('Clerk error details:', err.errors[0]);
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       toast({
         title: "Error",
-        description: "Unexpected error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -90,30 +120,18 @@ const Auth = () => {
   };
 
   const handleGoogleAuth = async () => {
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      const { error } = await signInWithGoogle();
+      if (!clerkSignIn || !signInLoaded) return;
       
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to sign in with Google",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Successfully signed in with Google!",
-        });
-      }
-    } catch (error) {
-      console.error('Google auth error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to sign in with Google",
-        variant: "destructive",
+      await clerkSignIn.authenticateWithRedirect({
+        strategy: 'oauth_google',
+        redirectUrl: window.location.origin + '/sso-callback',
+        redirectUrlComplete: window.location.origin + '/',
       });
-    } finally {
+    } catch (error: any) {
+      console.error('Google auth error:', error);
       setLoading(false);
     }
   };
@@ -138,7 +156,7 @@ const Auth = () => {
           </CardTitle>
           <CardDescription>
             {isLogin 
-              ? "Sign in to your account" 
+              ? "" 
               : "Create a new account"
             }
           </CardDescription>
@@ -146,11 +164,10 @@ const Auth = () => {
         <CardContent>
           {/* Google OAuth Button */}
           <div className="space-y-4">
-            <Button
+            <button
               type="button"
-              variant="outline"
-              className="w-full flex items-center gap-3"
               onClick={() => handleGoogleAuth()}
+              className="bg-[rgba(226,226,226,1)] w-full flex items-center justify-center gap-3 text-base text-black font-normal p-4 border-[rgba(209,209,209,1)] border hover:bg-[rgba(216,216,216,1)] transition-colors disabled:opacity-50"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
@@ -171,7 +188,7 @@ const Auth = () => {
                 />
               </svg>
               Continue with Google
-            </Button>
+            </button>
             
             {/* Divider */}
             <div className="relative">
@@ -211,16 +228,18 @@ const Auth = () => {
               />
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <button
+              type="submit"
               disabled={loading}
+              className="bg-[rgba(226,226,226,1)] w-full flex items-center justify-center gap-2 text-base text-black font-normal p-4 border-[rgba(209,209,209,1)] border-t hover:bg-[rgba(216,216,216,1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading 
-                ? (isLogin ? "Signing in..." : "Signing up...") 
-                : (isLogin ? "Sign In" : "Sign Up")
-              }
-            </Button>
+              <span>
+                {loading 
+                  ? (isLogin ? "Signing in..." : "Signing up...") 
+                  : (isLogin ? "Sign In" : "Sign Up")
+                }
+              </span>
+            </button>
 
             <div className="text-center">
               <Button

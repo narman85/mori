@@ -1,10 +1,10 @@
 import React from 'react';
 import { Header } from '@/components/Header';
-import { CartSidebar } from '@/components/CartSidebar';
+// CartSidebar removed for simplicity
 import { useState } from 'react';
 
 const About = () => {
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  // Cart functionality removed for simplicity
 
   return (
     <div className="bg-white flex flex-col overflow-hidden">
@@ -180,11 +180,7 @@ const About = () => {
         />
       </div>
 
-      {/* Cart Sidebar */}
-      <CartSidebar 
-        isOpen={isCartOpen} 
-        onClose={() => setIsCartOpen(false)} 
-      />
+      {/* Cart sidebar removed for demo */}
     </div>
   );
 };

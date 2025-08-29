@@ -64,7 +64,14 @@ interface Order {
   updated: string;
 }
 
-interface UserWithOrders extends (User | OAuthUser) {
+interface UserWithOrders {
+  id: string;
+  email: string;
+  name?: string;
+  avatar?: string;
+  verified?: boolean;
+  created?: string;
+  updated?: string;
   orders?: Order[];
   totalOrders?: number;
   totalSpent?: number;

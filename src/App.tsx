@@ -6,13 +6,17 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import { StripeProvider } from "@/context/StripeContext";
+import { ClerkProvider } from "@clerk/clerk-react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ClerkAuth from "./pages/ClerkAuth";
 import About from "./pages/About";
 import ProductDetail from "./pages/ProductDetail";
 import { Checkout } from "./pages/Checkout";
 import { OrderConfirmation } from "./pages/OrderConfirmation";
 import NotFound from "./pages/NotFound";
+import SSOCallback from "./pages/SSOCallback";
+// Admin imports
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import ProductsManagement from "./pages/admin/ProductsManagement";
@@ -28,20 +32,33 @@ import { TestConnection } from "./components/TestConnection";
 
 const queryClient = new QueryClient();
 
+// Get Clerk publishable key from environment
+const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <CartProvider>
-          <StripeProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <Routes>
+  <ClerkProvider 
+    publishableKey={clerkPubKey}
+    appearance={{
+      elements: {
+        formButtonPrimary: 'bg-black hover:bg-gray-800 text-white',
+        card: 'shadow-lg',
+      },
+    }}
+  >
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <CartProvider>
+            <StripeProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/test" element={<TestConnection />} />
               <Route path="/auth" element={<Auth />} />
-              {/* OAuth callback removed */}
+              <Route path="/clerk-auth" element={<ClerkAuth />} />
+              <Route path="/sso-callback" element={<SSOCallback />} />
               <Route path="/about" element={<About />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/checkout" element={<Checkout />} />
@@ -73,6 +90,7 @@ const App = () => (
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
+  </ClerkProvider>
 );
 
 export default App;

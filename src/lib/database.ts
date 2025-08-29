@@ -1,15 +1,5 @@
-import { createClient } from '@libsql/client';
+// Static data for demo - In production this would be API calls
 
-// Turso database configuration
-const tursoConfig = {
-  url: import.meta.env.VITE_TURSO_DATABASE_URL || 'libsql://your-database.turso.io',
-  authToken: import.meta.env.VITE_TURSO_AUTH_TOKEN || '',
-};
-
-// Create Turso client
-export const turso = createClient(tursoConfig);
-
-// Database types
 export interface User {
   id: string;
   email: string;
@@ -64,111 +54,172 @@ export interface OrderItem {
   created_at: string;
 }
 
-// Database operations
+// Static demo products
+const demoProducts: Product[] = [
+  {
+    id: 'tea_1',
+    name: 'Premium Green Tea',
+    description: 'High-quality green tea leaves sourced from the finest gardens. Rich in antioxidants with a delicate, refreshing taste.',
+    short_description: 'Premium organic green tea',
+    price: 24.99,
+    sale_price: undefined,
+    stock: 100,
+    image_url: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500',
+    hover_image_url: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=500&brightness=110',
+    category: 'green',
+    is_featured: true,
+    is_active: true,
+    display_order: 1,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'tea_2',
+    name: 'Earl Grey Supreme',
+    description: 'Classic Earl Grey blend with bergamot oil and cornflower petals. A sophisticated and aromatic tea experience.',
+    short_description: 'Classic Earl Grey blend',
+    price: 22.99,
+    sale_price: 19.99,
+    stock: 75,
+    image_url: 'https://images.unsplash.com/photo-1571334100328-9a1a5b2ffc1c?w=500',
+    hover_image_url: 'https://images.unsplash.com/photo-1571334100328-9a1a5b2ffc1c?w=500&brightness=110',
+    category: 'black',
+    is_featured: true,
+    is_active: true,
+    display_order: 2,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'tea_3',
+    name: 'Chamomile Dreams',
+    description: 'Soothing chamomile flowers perfect for evening relaxation. Naturally caffeine-free herbal blend.',
+    short_description: 'Relaxing chamomile herbal tea',
+    price: 18.99,
+    sale_price: undefined,
+    stock: 150,
+    image_url: 'https://images.unsplash.com/photo-1627220467425-5b4b64d1c3c1?w=500',
+    hover_image_url: 'https://images.unsplash.com/photo-1627220467425-5b4b64d1c3c1?w=500&brightness=110',
+    category: 'herbal',
+    is_featured: false,
+    is_active: true,
+    display_order: 3,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'tea_4',
+    name: 'Dragon Well Longjing',
+    description: 'Traditional Chinese green tea with a sweet, delicate flavor. Pan-roasted leaves with a distinctive flat shape.',
+    short_description: 'Traditional Chinese green tea',
+    price: 32.99,
+    sale_price: undefined,
+    stock: 50,
+    image_url: 'https://images.unsplash.com/photo-1563822249548-7a58fb1fc03b?w=500',
+    hover_image_url: 'https://images.unsplash.com/photo-1563822249548-7a58fb1fc03b?w=500&brightness=110',
+    category: 'green',
+    is_featured: true,
+    is_active: true,
+    display_order: 4,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'tea_5',
+    name: 'Himalayan Gold',
+    description: 'High-altitude black tea from the Himalayas. Bold and malty with golden tips and exceptional depth.',
+    short_description: 'Premium Himalayan black tea',
+    price: 45.99,
+    sale_price: 39.99,
+    stock: 25,
+    image_url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500',
+    hover_image_url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500&brightness=110',
+    category: 'black',
+    is_featured: true,
+    is_active: true,
+    display_order: 5,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'tea_6',
+    name: 'Jasmine Phoenix Pearls',
+    description: 'Hand-rolled green tea pearls scented with jasmine flowers. A delicate floral aroma with sweet undertones.',
+    short_description: 'Jasmine-scented green tea pearls',
+    price: 28.99,
+    sale_price: undefined,
+    stock: 80,
+    image_url: 'https://images.unsplash.com/photo-1597318378904-d16154d3d04d?w=500',
+    hover_image_url: 'https://images.unsplash.com/photo-1597318378904-d16154d3d04d?w=500&brightness=110',
+    category: 'green',
+    is_featured: false,
+    is_active: true,
+    display_order: 6,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+// Database operations (now using static data)
 export const db = {
   // Products
   async getProducts(): Promise<Product[]> {
-    const result = await turso.execute('SELECT * FROM products WHERE is_active = TRUE ORDER BY display_order, created_at DESC');
-    return result.rows as unknown as Product[];
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return demoProducts.filter(p => p.is_active);
   },
 
   async getProduct(id: string): Promise<Product | null> {
-    const result = await turso.execute({
-      sql: 'SELECT * FROM products WHERE id = ? AND is_active = TRUE',
-      args: [id]
-    });
-    return result.rows[0] as unknown as Product || null;
+    await new Promise(resolve => setTimeout(resolve, 50));
+    return demoProducts.find(p => p.id === id && p.is_active) || null;
   },
 
   async getFeaturedProducts(): Promise<Product[]> {
-    const result = await turso.execute('SELECT * FROM products WHERE is_featured = TRUE AND is_active = TRUE ORDER BY display_order');
-    return result.rows as unknown as Product[];
+    await new Promise(resolve => setTimeout(resolve, 100));
+    return demoProducts.filter(p => p.is_featured && p.is_active);
   },
 
   async updateProductStock(id: string, quantity: number): Promise<void> {
-    await turso.execute({
-      sql: 'UPDATE products SET stock = stock - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      args: [quantity, id]
-    });
+    // In real app, this would update the database
+    const product = demoProducts.find(p => p.id === id);
+    if (product) {
+      product.stock = Math.max(0, product.stock - quantity);
+    }
   },
 
-  // Orders
+  // Orders (demo functions)
   async createOrder(order: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
     const orderId = crypto.randomUUID();
-    await turso.execute({
-      sql: `INSERT INTO orders (id, user_id, guest_email, guest_name, guest_phone, total_amount, status, stripe_payment_intent_id, shipping_address, billing_address, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [
-        orderId,
-        order.user_id || null,
-        order.guest_email || null,
-        order.guest_name || null,
-        order.guest_phone || null,
-        order.total_amount,
-        order.status,
-        order.stripe_payment_intent_id || null,
-        order.shipping_address || null,
-        order.billing_address || null,
-        order.notes || null
-      ]
-    });
+    console.log('Demo: Created order', orderId, order);
     return orderId;
   },
 
   async createOrderItem(orderItem: Omit<OrderItem, 'id' | 'created_at'>): Promise<void> {
-    const itemId = crypto.randomUUID();
-    await turso.execute({
-      sql: `INSERT INTO order_items (id, order_id, product_id, quantity, unit_price, total_price)
-            VALUES (?, ?, ?, ?, ?, ?)`,
-      args: [
-        itemId,
-        orderItem.order_id,
-        orderItem.product_id,
-        orderItem.quantity,
-        orderItem.unit_price,
-        orderItem.total_price
-      ]
-    });
+    console.log('Demo: Created order item', orderItem);
   },
 
   async getOrder(id: string): Promise<Order | null> {
-    const result = await turso.execute({
-      sql: 'SELECT * FROM orders WHERE id = ?',
-      args: [id]
-    });
-    return result.rows[0] as unknown as Order || null;
+    console.log('Demo: Get order', id);
+    return null; // Demo implementation
   },
 
   async getOrdersByUser(userId: string): Promise<Order[]> {
-    const result = await turso.execute({
-      sql: 'SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC',
-      args: [userId]
-    });
-    return result.rows as unknown as Order[];
+    console.log('Demo: Get orders for user', userId);
+    return []; // Demo implementation
   },
 
   async getOrderItems(orderId: string): Promise<OrderItem[]> {
-    const result = await turso.execute({
-      sql: 'SELECT * FROM order_items WHERE order_id = ?',
-      args: [orderId]
-    });
-    return result.rows as unknown as OrderItem[];
+    console.log('Demo: Get order items', orderId);
+    return []; // Demo implementation
   },
 
-  // Users
+  // Users (demo functions)
   async createUser(user: Omit<User, 'created_at' | 'updated_at'>): Promise<void> {
-    await turso.execute({
-      sql: `INSERT OR REPLACE INTO users (id, email, name, avatar_url, role)
-            VALUES (?, ?, ?, ?, ?)`,
-      args: [user.id, user.email, user.name || null, user.avatar_url || null, user.role]
-    });
+    console.log('Demo: Created user', user);
   },
 
   async getUser(id: string): Promise<User | null> {
-    const result = await turso.execute({
-      sql: 'SELECT * FROM users WHERE id = ?',
-      args: [id]
-    });
-    return result.rows[0] as unknown as User || null;
+    console.log('Demo: Get user', id);
+    return null; // Demo implementation
   },
 };

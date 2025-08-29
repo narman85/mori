@@ -11,8 +11,9 @@ const Index = () => {
       <main className="w-full flex flex-col items-center">
         <Hero />
         
-        
-        <ProductGrid />
+        <div className="w-full py-6 md:py-8">
+          <ProductGrid />
+        </div>
       </main>
     </div>
   );
