@@ -18,7 +18,10 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
+        console.log('🔍 Fetching products from Turso...');
         const tursoProducts = await tursoDb.getProducts();
+        console.log('📦 Raw products from Turso:', tursoProducts);
+        console.log('📦 Number of products:', tursoProducts.length);
         
         const formattedProducts: Product[] = tursoProducts.map(product => ({
           id: product.id,
@@ -35,6 +38,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
           originalPrice: undefined
         }));
         
+        console.log('✨ Formatted products for display:', formattedProducts);
         setProducts(formattedProducts);
       } catch (err) {
         console.error('Error fetching products:', err);
