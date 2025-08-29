@@ -18,7 +18,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({ className = '' }) => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const tursoProducts = await db.getProducts();
+        const tursoProducts = await tursoDb.getProducts();
         
         const formattedProducts: Product[] = tursoProducts.map(product => ({
           id: product.id,
