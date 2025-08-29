@@ -14,6 +14,7 @@ const ProductDetail = () => {
   const { addToCart } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -58,6 +59,36 @@ const ProductDetail = () => {
 
     fetchProduct();
   }, [id, navigate]);
+
+  // Get all product images (main + additional)
+  const getProductImages = () => {
+    if (!product) return [];
+    
+    const images = [];
+    
+    // Add main image
+    if (product.image_url) {
+      images.push(product.image_url);
+    }
+    
+    // Add hover image if different from main
+    if (product.hover_image_url && product.hover_image_url !== product.image_url) {
+      images.push(product.hover_image_url);
+    }
+    
+    // Add additional images if available
+    if ((product as any).additional_images) {
+      const additionalImages = (product as any).additional_images.split(',').filter((img: string) => img.trim());
+      images.push(...additionalImages);
+    }
+    
+    // If no images, add default
+    if (images.length === 0) {
+      images.push('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center');
+    }
+    
+    return images;
+  };
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -134,13 +165,37 @@ const ProductDetail = () => {
         <div className="px-6 md:px-8 lg:px-12 xl:px-16 pb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
               
-              {/* Left side - Product image */}
-              <div className="flex justify-start">
-                <img
-                  src={product.image_url || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center'}
-                  alt={product.name}
-                  className="w-full h-auto max-w-lg object-cover"
-                />
+              {/* Left side - Product images with gallery */}
+              <div className="flex flex-col gap-4">
+                {/* Main image */}
+                <div className="flex justify-center">
+                  <img
+                    src={getProductImages()[selectedImageIndex] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center'}
+                    alt={product.name}
+                    className="w-full h-auto max-w-xl object-cover rounded-lg"
+                  />
+                </div>
+                
+                {/* Thumbnail gallery */}
+                {getProductImages().length > 1 && (
+                  <div className="flex gap-2 justify-center">
+                    {getProductImages().map((image, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedImageIndex(index)}
+                        className={`border-2 rounded-md overflow-hidden transition-all ${
+                          selectedImageIndex === index ? 'border-black' : 'border-gray-300 hover:border-gray-500'
+                        }`}
+                      >
+                        <img
+                          src={image}
+                          alt={`${product.name} thumbnail ${index + 1}`}
+                          className="w-20 h-20 object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Right side - Product info */}

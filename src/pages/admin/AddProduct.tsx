@@ -134,7 +134,8 @@ const AddProduct: React.FC = () => {
         sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
         stock: parseInt(formData.stock || '0'),
         image_url: imageUrls[0] || '',
-        hover_image_url: hoverImageUrl,
+        hover_image_url: imageUrls[1] || hoverImageUrl || '',
+        additional_images: imageUrls.slice(2).join(','), // Store additional images as comma-separated string
         category: formData.weight || 'tea',
         is_featured: false,
         is_active: true,
