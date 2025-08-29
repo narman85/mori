@@ -15,7 +15,22 @@ export const tursoDb = {
       WHERE is_active = 1 
       ORDER BY display_order DESC, created_at DESC
     `);
-    return result.rows;
+    
+    // Parse JSON image_url field for each product
+    return result.rows.map(row => {
+      const product = { ...row };
+      try {
+        if (product.image_url && product.image_url.startsWith('[')) {
+          const images = JSON.parse(product.image_url);
+          product.image_url = images[0] || '';
+          product.hover_image_url = images[1] || product.hover_image_url || '';
+          product.additional_images = images.slice(2).join(',');
+        }
+      } catch (e) {
+        // If not JSON, keep as is
+      }
+      return product;
+    });
   },
 
   async getProduct(id: string) {
@@ -23,10 +38,35 @@ export const tursoDb = {
       sql: `SELECT * FROM products WHERE id = ? AND is_active = 1`,
       args: [id]
     });
-    return result.rows[0] || null;
+    
+    const product = result.rows[0];
+    if (!product) return null;
+    
+    // Parse JSON image_url field
+    try {
+      if (product.image_url && product.image_url.startsWith('[')) {
+        const images = JSON.parse(product.image_url);
+        product.image_url = images[0] || '';
+        product.hover_image_url = images[1] || product.hover_image_url || '';
+        product.additional_images = images.slice(2).join(',');
+      }
+    } catch (e) {
+      // If not JSON, keep as is
+    }
+    
+    return product;
   },
 
   async createProduct(productData: any) {
+    // Store all images as JSON string in image_url field
+    const allImages = [];
+    if (productData.image_url) allImages.push(productData.image_url);
+    if (productData.hover_image_url) allImages.push(productData.hover_image_url);
+    if (productData.additional_images) {
+      const additionalImages = productData.additional_images.split(',').filter(img => img.trim());
+      allImages.push(...additionalImages);
+    }
+    
     return await turso.execute({
       sql: `INSERT INTO products (
         id, name, description, short_description, price, sale_price, stock,
@@ -41,7 +81,7 @@ export const tursoDb = {
         productData.price,
         productData.sale_price,
         productData.stock,
-        productData.image_url,
+        JSON.stringify(allImages), // Store all images as JSON
         productData.hover_image_url,
         productData.category,
         productData.is_featured ? 1 : 0,
@@ -54,10 +94,22 @@ export const tursoDb = {
   },
 
   async updateProduct(id: string, productData: any) {
+    // Store all images as JSON string in image_url field
+    const allImages = [];
+    if (productData.image_url) allImages.push(productData.image_url);
+    if (productData.hover_image_url && productData.hover_image_url !== productData.image_url) {
+      allImages.push(productData.hover_image_url);
+    }
+    if (productData.additional_images) {
+      const additionalImages = productData.additional_images.split(',').filter(img => img.trim());
+      allImages.push(...additionalImages);
+    }
+    
     return await turso.execute({
       sql: `UPDATE products SET 
         name = ?, description = ?, short_description = ?, 
         price = ?, sale_price = ?, stock = ?, 
+        image_url = ?, hover_image_url = ?,
         category = ?, is_featured = ?, is_active = ?, 
         updated_at = ?
         WHERE id = ?`,
@@ -68,10 +120,12 @@ export const tursoDb = {
         productData.price,
         productData.sale_price,
         productData.stock,
+        JSON.stringify(allImages), // Store all images as JSON
+        productData.hover_image_url,
         productData.category,
         productData.is_featured ? 1 : 0,
         productData.is_active ? 1 : 0,
-        new Date().toISOString(),
+        productData.updated_at || new Date().toISOString(),
         id
       ]
     });

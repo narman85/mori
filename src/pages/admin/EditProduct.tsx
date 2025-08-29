@@ -6,9 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { pb } from '@/integrations/supabase/client';
+import { tursoDb } from '@/integrations/turso/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, ArrowLeft } from 'lucide-react';
+import { uploadToCloudinary, uploadMultipleToCloudinary } from '@/utils/cloudinary';
 
 interface Product {
   id: string;
@@ -71,7 +72,7 @@ const EditProduct: React.FC = () => {
       
       try {
         setFetchLoading(true);
-        const record = await pb.collection('products').getOne<Product>(id);
+        const record = await tursoDb.getProduct(id);
         
         // Parse preparation data
         let preparation = {
@@ -95,6 +96,10 @@ const EditProduct: React.FC = () => {
           }
         }
         
+        if (!record) {
+          throw new Error('Product not found');
+        }
+        
         setFormData({
           name: record.name,
           description: record.description || '',
@@ -102,13 +107,24 @@ const EditProduct: React.FC = () => {
           price: record.price.toString(),
           sale_price: record.sale_price ? record.sale_price.toString() : '',
           weight: record.category || '',
-          in_stock: record.in_stock,
+          in_stock: record.stock > 0,
           stock: record.stock ? record.stock.toString() : '',
           preparation: preparation
         });
         
-        setExistingImages(record.image || []);
-        setExistingHoverImage(record.hover_image || null);
+        // Get images from Turso data - they're already parsed by tursoDb.getProduct
+        const images = [];
+        if (record.image_url) images.push(record.image_url);
+        if (record.hover_image_url && record.hover_image_url !== record.image_url) {
+          images.push(record.hover_image_url);
+        }
+        if (record.additional_images) {
+          const additionalImages = record.additional_images.split(',').filter(img => img.trim());
+          images.push(...additionalImages);
+        }
+        
+        setExistingImages(images);
+        setExistingHoverImage(record.hover_image_url || null);
         
       } catch (error) {
         console.error('Error fetching product:', error);
@@ -222,11 +238,12 @@ const EditProduct: React.FC = () => {
   };
 
   const getImageUrl = (imageName: string) => {
-    try {
-      return pb.files.getURL({ id, collectionId: 'az4zftchp7yppc0', collectionName: 'products' }, imageName);
-    } catch {
-      return `http://127.0.0.1:8090/api/files/az4zftchp7yppc0/${id}/${imageName}`;
+    // Cloudinary URLs are already complete URLs, just return them
+    if (imageName.startsWith('http')) {
+      return imageName;
     }
+    // Fallback for any legacy local images  
+    return imageName;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -244,61 +261,46 @@ const EditProduct: React.FC = () => {
     try {
       setLoading(true);
       
-      // Create FormData for file uploads
-      const data = new FormData();
+      // Keep existing images that weren't deleted
+      const keptImages = existingImages.filter(img => !imagesToDelete.includes(img));
       
-      // Add basic fields
-      data.append('name', formData.name);
-      data.append('description', formData.description);
-      data.append('short_description', formData.short_description);
-      data.append('price', formData.price);
-      data.append('sale_price', formData.sale_price || '0');
-      data.append('category', formData.weight);
-      data.append('in_stock', formData.in_stock.toString());
-      data.append('stock', formData.stock || '0');
-      
-      // Add preparation data as JSON if any field is filled
-      const hasPreparationData = Object.values(formData.preparation).some(value => value.trim() !== '');
-      if (hasPreparationData) {
-        data.append('preparation', JSON.stringify(formData.preparation));
+      // Upload new images to Cloudinary if any
+      let newImageUrls: string[] = [];
+      if (newMainImages.length > 0) {
+        const uploadedImages = await uploadMultipleToCloudinary(newMainImages);
+        newImageUrls = uploadedImages.map(result => result.secure_url);
       }
       
-      // Calculate final image list (existing - deleted + new)
-      const finalImages = existingImages.filter(img => !imagesToDelete.includes(img));
-      
-      console.log('🖼️ EditProduct - Image update:', {
-        existingImages,
-        imagesToDelete,
-        finalImages,
-        newMainImages: newMainImages.length,
-        existingHoverImage,
-        deleteHoverImage,
-        newHoverImage: !!newHoverImage
-      });
-      
-      // Set the remaining existing images first
-      finalImages.forEach(imageName => {
-        data.append('image', imageName);
-      });
-      
-      // Add new main images
-      newMainImages.forEach((file) => {
-        data.append('image', file);
-      });
-      
-      // Handle hover image
-      if (deleteHoverImage) {
-        // If deleting hover image and no new one, set to empty
-        data.append('hover_image', '');
-      } else if (newHoverImage) {
-        // If new hover image, use it
-        data.append('hover_image', newHoverImage);
-      } else if (existingHoverImage && !deleteHoverImage) {
-        // Keep existing hover image
-        data.append('hover_image', existingHoverImage);
+      // Upload new hover image if any
+      let newHoverImageUrl: string | null = null;
+      if (newHoverImage) {
+        const uploadedHoverImage = await uploadToCloudinary(newHoverImage);
+        newHoverImageUrl = uploadedHoverImage.secure_url;
       }
-
-      await pb.collection('products').update(id!, data);
+      
+      // Combine all images
+      const allImages = [...keptImages, ...newImageUrls];
+      const hoverImageUrl = newHoverImageUrl || (deleteHoverImage ? null : existingHoverImage);
+      
+      // Prepare product data for Turso update
+      const productData = {
+        name: formData.name,
+        description: formData.description,
+        short_description: formData.short_description,
+        price: parseFloat(formData.price),
+        sale_price: formData.sale_price ? parseFloat(formData.sale_price) : null,
+        stock: parseInt(formData.stock || '0'),
+        image_url: allImages[0] || '',
+        hover_image_url: allImages[1] || hoverImageUrl || '',
+        additional_images: allImages.slice(2).join(','),
+        category: formData.weight || 'tea',
+        is_featured: false,
+        is_active: true,
+        display_order: 1,
+        updated_at: new Date().toISOString()
+      };
+      
+      await tursoDb.updateProduct(id!, productData);
       
       toast({
         title: "Success",

@@ -170,9 +170,9 @@ const ProductDetail = () => {
                 {/* Main image */}
                 <div className="flex justify-center">
                   <img
-                    src={getProductImages()[selectedImageIndex] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center'}
+                    src={getProductImages()[selectedImageIndex] || 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop&crop=center'}
                     alt={product.name}
-                    className="w-full h-auto max-w-xl object-cover rounded-lg"
+                    className="w-full h-full aspect-square object-cover rounded-lg"
                   />
                 </div>
                 
