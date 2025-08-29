@@ -10,6 +10,7 @@ import { tursoDb } from '@/integrations/turso/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Upload, X, ArrowLeft } from 'lucide-react';
 import DraggableImageGrid from '@/components/admin/DraggableImageGrid';
+import { uploadToCloudinary, uploadMultipleToCloudinary } from '@/utils/cloudinary';
 
 const AddProduct: React.FC = () => {
   const navigate = useNavigate();
@@ -97,12 +98,31 @@ const AddProduct: React.FC = () => {
       // Create unique product ID
       const productId = crypto.randomUUID();
       
-      // Handle image URLs (for demo, we'll use placeholder URLs)
-      const imageUrls = mainImages.map((file, index) => 
-        `https://images.unsplash.com/photo-${Date.now() + index}?w=500`
-      );
-      const hoverImageUrl = hoverImage ? 
-        `https://images.unsplash.com/photo-${Date.now()}-hover?w=500` : null;
+      // Upload images to Cloudinary
+      let imageUrls: string[] = [];
+      let hoverImageUrl: string | null = null;
+
+      try {
+        // Upload main images
+        if (mainImages.length > 0) {
+          const uploadedImages = await uploadMultipleToCloudinary(mainImages);
+          imageUrls = uploadedImages.map(result => result.secure_url);
+        }
+
+        // Upload hover image
+        if (hoverImage) {
+          const uploadedHoverImage = await uploadToCloudinary(hoverImage);
+          hoverImageUrl = uploadedHoverImage.secure_url;
+        }
+      } catch (uploadError) {
+        console.error('Error uploading images:', uploadError);
+        toast({
+          title: "Upload Error",
+          description: "Failed to upload images. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Prepare product data for Turso
       const productData = {
@@ -128,7 +148,7 @@ const AddProduct: React.FC = () => {
       
       toast({
         title: "Success",
-        description: "Product added to Turso database successfully",
+        description: "Product added with images uploaded to Cloudinary successfully",
       });
       
       // Navigate back to products management
